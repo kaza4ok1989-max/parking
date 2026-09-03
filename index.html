@@ -3,10 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Besico Parkplatz</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+
+    .car {
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+  </style>
 </head>
+
 <body>
+
   <h1>Besico Parkplatz</h1>
-  <p>Карта автомобилей работает.</p>
+
+  <h2>Автомобили</h2>
+
+  <div id="cars">
+    Загружаем автомобили...
+  </div>
+
+  <script>
+    const SUPABASE_URL =
+      "https://cydestwofhdfsmekwxho.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_LNyn0n-rbQfu5AIMeAt9XQ_zqSpQ3Dh";
+
+    async function loadCars() {
+
+      const response = await fetch(
+        SUPABASE_URL + "/rest/v1/cars?select=*",
+        {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: "Bearer " + SUPABASE_KEY
+          }
+        }
+      );
+
+      const carsDiv = document.getElementById("cars");
+
+      if (!response.ok) {
+        const error = await response.text();
+
+        carsDiv.innerHTML =
+          "<b>Ошибка Supabase:</b><br>" + error;
+
+        return;
+      }
+
+      const cars = await response.json();
+
+      console.log("Cars:", cars);
+
+      if (cars.length === 0) {
+        carsDiv.innerHTML =
+          "В таблице cars пока нет автомобилей.";
+        return;
+      }
+
+      carsDiv.innerHTML = "";
+
+      cars.forEach(car => {
+
+        const div = document.createElement("div");
+
+        div.className = "car";
+
+        div.textContent =
+          JSON.stringify(car);
+
+        carsDiv.appendChild(div);
+
+      });
+    }
+
+    loadCars();
+  </script>
+
 </body>
 </html>
