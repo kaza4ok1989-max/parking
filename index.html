@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Parking Fahrzeugkarte</title>
 
   <style>
@@ -34,7 +35,8 @@
       gap: 8px;
     }
 
-    input, select {
+    input,
+    select {
       min-height: 42px;
       padding: 8px 12px;
       border-radius: 8px;
@@ -234,7 +236,7 @@
   <div id="mapWrapper">
     <img
       id="parkingImage"
-      src="parking.png"
+      src="./parking.png?v=3"
       alt="Parkplatz"
     >
     <div id="markers"></div>
@@ -282,28 +284,41 @@ const SUPABASE_KEY =
 
 let cars = [];
 
-const markers = document.getElementById("markers");
-const search = document.getElementById("search");
-const modelFilter = document.getElementById("modelFilter");
-const colorFilter = document.getElementById("colorFilter");
-const status = document.getElementById("status");
+const markers =
+  document.getElementById("markers");
+
+const search =
+  document.getElementById("search");
+
+const modelFilter =
+  document.getElementById("modelFilter");
+
+const colorFilter =
+  document.getElementById("colorFilter");
+
+const status =
+  document.getElementById("status");
 
 async function loadCars() {
 
   try {
 
     const response = await fetch(
-      SUPABASE_URL + "/rest/v1/cars?select=*&order=id.asc",
+      SUPABASE_URL +
+      "/rest/v1/cars?select=*&order=id.asc",
       {
         headers: {
           apikey: SUPABASE_KEY,
-          Authorization: "Bearer " + SUPABASE_KEY
+          Authorization:
+            "Bearer " + SUPABASE_KEY
         }
       }
     );
 
     if (!response.ok) {
-      throw new Error(await response.text());
+      throw new Error(
+        await response.text()
+      );
     }
 
     cars = await response.json();
@@ -322,48 +337,75 @@ async function loadCars() {
 
 function getColorClass(color) {
 
-  const c = (color || "").toLowerCase();
+  const c =
+    (color || "").toLowerCase();
 
-  if (c.includes("white") || c.includes("weiß"))
+  if (
+    c.includes("white") ||
+    c.includes("weiß")
+  ) {
     return "white";
+  }
 
-  if (c.includes("black") || c.includes("schwarz"))
+  if (
+    c.includes("black") ||
+    c.includes("schwarz")
+  ) {
     return "black";
+  }
 
-  if (c.includes("red") || c.includes("rot"))
+  if (
+    c.includes("red") ||
+    c.includes("rot")
+  ) {
     return "red";
+  }
 
-  if (c.includes("orange"))
+  if (c.includes("orange")) {
     return "orange";
+  }
 
-  if (c.includes("green") || c.includes("grün"))
+  if (
+    c.includes("green") ||
+    c.includes("grün")
+  ) {
     return "green";
+  }
 
   return "black";
 }
 
 function carMatches(car) {
 
-  const q = search.value.trim().toLowerCase();
+  const q =
+    search.value
+      .trim()
+      .toLowerCase();
 
   const searchText =
     `${car.vin5 || ""} ${car.fahrnummer || ""}`
       .toLowerCase();
 
-  if (q && !searchText.includes(q))
+  if (
+    q &&
+    !searchText.includes(q)
+  ) {
     return false;
+  }
 
   if (
     modelFilter.value &&
     car.model !== modelFilter.value
-  )
+  ) {
     return false;
+  }
 
   if (
     colorFilter.value &&
     car.color !== colorFilter.value
-  )
+  ) {
     return false;
+  }
 
   return true;
 }
@@ -379,14 +421,18 @@ function renderCars() {
     if (
       car.position_x == null ||
       car.position_y == null
-    ) return;
+    ) {
+      return;
+    }
 
-    const marker = document.createElement("button");
+    const marker =
+      document.createElement("button");
 
     marker.type = "button";
 
     marker.className =
-      "marker " + getColorClass(car.color);
+      "marker " +
+      getColorClass(car.color);
 
     marker.style.left =
       car.position_x + "%";
@@ -399,7 +445,9 @@ function renderCars() {
 
     if (!carMatches(car)) {
 
-      marker.classList.add("hidden");
+      marker.classList.add(
+        "hidden"
+      );
 
     } else {
 
@@ -425,24 +473,30 @@ function renderCars() {
 
 function showCar(car) {
 
-  document.getElementById("cardModel")
-    .textContent =
+  document.getElementById(
+    "cardModel"
+  ).textContent =
     car.model || "Fahrzeug";
 
-  document.getElementById("cardVin")
-    .textContent =
+  document.getElementById(
+    "cardVin"
+  ).textContent =
     car.vin5 || "-";
 
-  document.getElementById("cardFahrnummer")
-    .textContent =
+  document.getElementById(
+    "cardFahrnummer"
+  ).textContent =
     car.fahrnummer || "-";
 
-  document.getElementById("cardColor")
-    .textContent =
+  document.getElementById(
+    "cardColor"
+  ).textContent =
     car.color || "-";
 
   const mobileButton =
-    document.getElementById("mobileButton");
+    document.getElementById(
+      "mobileButton"
+    );
 
   if (car.mobile_url) {
 
@@ -459,19 +513,25 @@ function showCar(car) {
 
   }
 
-  document.getElementById("card")
-    .style.display =
+  document.getElementById(
+    "card"
+  ).style.display =
     "block";
 }
 
-document.getElementById("closeCard")
-  .addEventListener(
-    "click",
-    () => {
-      document.getElementById("card")
-        .style.display = "none";
-    }
-  );
+document.getElementById(
+  "closeCard"
+).addEventListener(
+  "click",
+  () => {
+
+    document.getElementById(
+      "card"
+    ).style.display =
+      "none";
+
+  }
+);
 
 search.addEventListener(
   "input",
