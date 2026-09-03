@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Parking Fahrzeugkarte</title>
 
   <style>
@@ -29,14 +28,16 @@
       font-size: 22px;
     }
 
-    .filters {
+    .toolbar {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      align-items: center;
     }
 
     input,
-    select {
+    select,
+    button {
       min-height: 42px;
       padding: 8px 12px;
       border-radius: 8px;
@@ -46,7 +47,18 @@
 
     input {
       flex: 1;
-      min-width: 220px;
+      min-width: 180px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #addCarButton {
+      background: #16a34a;
+      color: white;
+      border: 0;
+      font-weight: bold;
     }
 
     main {
@@ -68,6 +80,7 @@
       border-radius: 12px;
       background: #ddd;
       border: 1px solid #ccc;
+      touch-action: auto;
     }
 
     #parkingImage {
@@ -75,6 +88,7 @@
       width: 100%;
       height: auto;
       user-select: none;
+      -webkit-user-drag: none;
     }
 
     #markers {
@@ -86,8 +100,8 @@
     .marker {
       position: absolute;
       transform: translate(-50%, -50%);
-      min-width: 48px;
-      height: 30px;
+      min-width: 52px;
+      height: 32px;
       padding: 0 8px;
       border: 2px solid white;
       border-radius: 8px;
@@ -97,8 +111,13 @@
       font-weight: bold;
       font-size: 12px;
       box-shadow: 0 2px 7px rgba(0,0,0,.45);
-      cursor: pointer;
+      cursor: grab;
       pointer-events: auto;
+      touch-action: none;
+    }
+
+    .marker:active {
+      cursor: grabbing;
     }
 
     .marker.white {
@@ -131,27 +150,84 @@
       opacity: .12;
     }
 
-    #card {
+    #card,
+    #addPanel {
       display: none;
       position: fixed;
       left: 50%;
-      bottom: 20px;
       transform: translateX(-50%);
       width: calc(100% - 30px);
-      max-width: 420px;
+      max-width: 440px;
       background: white;
       border-radius: 14px;
       padding: 18px;
       box-shadow: 0 10px 40px rgba(0,0,0,.3);
-      z-index: 20;
+      z-index: 30;
     }
 
-    #card h2 {
-      margin: 0 0 12px;
+    #card {
+      bottom: 20px;
+    }
+
+    #addPanel {
+      top: 90px;
+    }
+
+    #card h2,
+    #addPanel h2 {
+      margin: 0 0 14px;
     }
 
     .row {
       margin: 7px 0;
+    }
+
+    .formRow {
+      margin-bottom: 10px;
+    }
+
+    .formRow label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .formRow input,
+    .formRow select {
+      width: 100%;
+    }
+
+    .panelActions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .panelActions button {
+      flex: 1;
+    }
+
+    #placeCarButton {
+      background: #2563eb;
+      color: white;
+      border: 0;
+    }
+
+    #cancelAddButton {
+      background: #eee;
+    }
+
+    #closeCard {
+      float: right;
+      border: 0;
+      background: #eee;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
     }
 
     .mobileButton {
@@ -165,15 +241,14 @@
       text-decoration: none;
     }
 
-    #closeCard {
-      float: right;
-      border: 0;
-      background: #eee;
-      border-radius: 50%;
-      width: 34px;
-      height: 34px;
-      cursor: pointer;
-      font-size: 18px;
+    #placementMessage {
+      display: none;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      background: #fff7cc;
+      border: 1px solid #eab308;
+      border-radius: 8px;
+      font-weight: bold;
     }
 
     @media (max-width: 600px) {
@@ -186,8 +261,8 @@
       }
 
       .marker {
-        min-width: 44px;
-        height: 28px;
+        min-width: 46px;
+        height: 30px;
       }
     }
   </style>
@@ -198,7 +273,7 @@
 <header>
   <h1>Parking · Fahrzeugkarte</h1>
 
-  <div class="filters">
+  <div class="toolbar">
     <input
       id="search"
       type="search"
@@ -226,12 +301,20 @@
       <option value="Orange">Orange</option>
       <option value="Green">Grün</option>
     </select>
+
+    <button id="addCarButton" type="button">
+      + Fahrzeug hinzufügen
+    </button>
   </div>
 </header>
 
 <main>
 
   <div id="status">Fahrzeuge werden geladen...</div>
+
+  <div id="placementMessage">
+    Klicke jetzt auf die gewünschte Position auf dem Parkplatz.
+  </div>
 
   <div id="mapWrapper">
     <img
@@ -244,8 +327,63 @@
 
 </main>
 
+<div id="addPanel">
+  <h2>Fahrzeug hinzufügen</h2>
+
+  <div class="formRow">
+    <label for="newVin">VIN</label>
+    <input id="newVin" type="text" placeholder="z.B. 12345">
+  </div>
+
+  <div class="formRow">
+    <label for="newFahrnummer">Fahrnummer</label>
+    <input id="newFahrnummer" type="text" placeholder="z.B. 999">
+  </div>
+
+  <div class="formRow">
+    <label for="newModel">Modell</label>
+    <select id="newModel">
+      <option>Ford Transit</option>
+      <option>Ford Transit Courier</option>
+      <option>Ford Transit Custom</option>
+      <option>Ford Puma</option>
+      <option>Ford Kuga</option>
+      <option>Ford Capri</option>
+      <option>Ford Ranger</option>
+      <option>Ford Ranger Wildtrak</option>
+      <option>Ford Focus</option>
+    </select>
+  </div>
+
+  <div class="formRow">
+    <label for="newColor">Farbe</label>
+    <select id="newColor">
+      <option value="White">Weiß</option>
+      <option value="Black">Schwarz</option>
+      <option value="Red">Rot</option>
+      <option value="Orange">Orange</option>
+      <option value="Green">Grün</option>
+    </select>
+  </div>
+
+  <div class="formRow">
+    <label for="newMobileUrl">Mobile.de URL (optional)</label>
+    <input id="newMobileUrl" type="url" placeholder="https://...">
+  </div>
+
+  <div class="panelActions">
+    <button id="cancelAddButton" type="button">
+      Abbrechen
+    </button>
+
+    <button id="placeCarButton" type="button">
+      Auf Parkplatz setzen
+    </button>
+  </div>
+</div>
+
 <div id="card">
-  <button id="closeCard">×</button>
+  <button id="closeCard" type="button">×</button>
 
   <h2 id="cardModel"></h2>
 
@@ -283,9 +421,15 @@ const SUPABASE_KEY =
   "sb_publishable_LNyn0n-rbQfu5AIMeAt9XQ_zqSpQ3Dh";
 
 let cars = [];
+let placementMode = false;
+let pendingCar = null;
+let dragged = false;
 
 const markers =
   document.getElementById("markers");
+
+const mapWrapper =
+  document.getElementById("mapWrapper");
 
 const search =
   document.getElementById("search");
@@ -299,27 +443,41 @@ const colorFilter =
 const status =
   document.getElementById("status");
 
+const addPanel =
+  document.getElementById("addPanel");
+
+const placementMessage =
+  document.getElementById("placementMessage");
+
+async function apiRequest(path, options = {}) {
+
+  const response = await fetch(
+    SUPABASE_URL + "/rest/v1/" + path,
+    {
+      ...options,
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response;
+}
+
 async function loadCars() {
 
   try {
 
-    const response = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/cars?select=*&order=id.asc",
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization:
-            "Bearer " + SUPABASE_KEY
-        }
-      }
+    const response = await apiRequest(
+      "cars?select=*&order=id.asc"
     );
-
-    if (!response.ok) {
-      throw new Error(
-        await response.text()
-      );
-    }
 
     cars = await response.json();
 
@@ -331,46 +489,35 @@ async function loadCars() {
 
     status.textContent =
       "Fehler beim Laden der Fahrzeuge.";
-
   }
 }
 
 function getColorClass(color) {
 
-  const c =
-    (color || "").toLowerCase();
+  const c = (color || "").toLowerCase();
 
   if (
     c.includes("white") ||
     c.includes("weiß")
-  ) {
-    return "white";
-  }
+  ) return "white";
 
   if (
     c.includes("black") ||
     c.includes("schwarz")
-  ) {
-    return "black";
-  }
+  ) return "black";
 
   if (
     c.includes("red") ||
     c.includes("rot")
-  ) {
-    return "red";
-  }
+  ) return "red";
 
-  if (c.includes("orange")) {
+  if (c.includes("orange"))
     return "orange";
-  }
 
   if (
     c.includes("green") ||
     c.includes("grün")
-  ) {
-    return "green";
-  }
+  ) return "green";
 
   return "black";
 }
@@ -378,34 +525,26 @@ function getColorClass(color) {
 function carMatches(car) {
 
   const q =
-    search.value
-      .trim()
-      .toLowerCase();
+    search.value.trim().toLowerCase();
 
   const searchText =
     `${car.vin5 || ""} ${car.fahrnummer || ""}`
       .toLowerCase();
 
-  if (
-    q &&
-    !searchText.includes(q)
-  ) {
+  if (q && !searchText.includes(q))
     return false;
-  }
 
   if (
     modelFilter.value &&
     car.model !== modelFilter.value
-  ) {
+  )
     return false;
-  }
 
   if (
     colorFilter.value &&
     car.color !== colorFilter.value
-  ) {
+  )
     return false;
-  }
 
   return true;
 }
@@ -421,9 +560,7 @@ function renderCars() {
     if (
       car.position_x == null ||
       car.position_y == null
-    ) {
-      return;
-    }
+    ) return;
 
     const marker =
       document.createElement("button");
@@ -431,8 +568,7 @@ function renderCars() {
     marker.type = "button";
 
     marker.className =
-      "marker " +
-      getColorClass(car.color);
+      "marker " + getColorClass(car.color);
 
     marker.style.left =
       car.position_x + "%";
@@ -445,23 +581,25 @@ function renderCars() {
 
     if (!carMatches(car)) {
 
-      marker.classList.add(
-        "hidden"
-      );
+      marker.classList.add("hidden");
 
     } else {
 
       visibleCount++;
-
     }
+
+    enableDrag(marker, car);
 
     marker.addEventListener(
       "click",
-      () => showCar(car)
+      () => {
+        if (!dragged) {
+          showCar(car);
+        }
+      }
     );
 
     markers.appendChild(marker);
-
   });
 
   status.textContent =
@@ -469,6 +607,152 @@ function renderCars() {
     " Fahrzeug" +
     (visibleCount === 1 ? "" : "e") +
     " angezeigt";
+}
+
+function enableDrag(marker, car) {
+
+  let startX = 0;
+  let startY = 0;
+
+  marker.addEventListener(
+    "pointerdown",
+    event => {
+
+      if (placementMode) return;
+
+      dragged = false;
+
+      startX = event.clientX;
+      startY = event.clientY;
+
+      marker.setPointerCapture(
+        event.pointerId
+      );
+    }
+  );
+
+  marker.addEventListener(
+    "pointermove",
+    event => {
+
+      if (
+        !marker.hasPointerCapture(
+          event.pointerId
+        )
+      ) return;
+
+      const distance =
+        Math.hypot(
+          event.clientX - startX,
+          event.clientY - startY
+        );
+
+      if (distance > 4) {
+        dragged = true;
+      }
+
+      if (!dragged) return;
+
+      const pos =
+        getMapPercent(
+          event.clientX,
+          event.clientY
+        );
+
+      marker.style.left =
+        pos.x + "%";
+
+      marker.style.top =
+        pos.y + "%";
+    }
+  );
+
+  marker.addEventListener(
+    "pointerup",
+    async event => {
+
+      if (
+        !marker.hasPointerCapture(
+          event.pointerId
+        )
+      ) return;
+
+      marker.releasePointerCapture(
+        event.pointerId
+      );
+
+      if (!dragged) return;
+
+      const pos =
+        getMapPercent(
+          event.clientX,
+          event.clientY
+        );
+
+      try {
+
+        status.textContent =
+          "Position wird gespeichert...";
+
+        await apiRequest(
+          `cars?id=eq.${car.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              Prefer: "return=minimal"
+            },
+            body: JSON.stringify({
+              position_x: pos.x,
+              position_y: pos.y
+            })
+          }
+        );
+
+        car.position_x = pos.x;
+        car.position_y = pos.y;
+
+        status.textContent =
+          "Position gespeichert.";
+
+        setTimeout(
+          renderCars,
+          500
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          "Position konnte nicht gespeichert werden."
+        );
+
+        renderCars();
+      }
+    }
+  );
+}
+
+function getMapPercent(clientX, clientY) {
+
+  const rect =
+    mapWrapper.getBoundingClientRect();
+
+  let x =
+    ((clientX - rect.left) /
+      rect.width) * 100;
+
+  let y =
+    ((clientY - rect.top) /
+      rect.height) * 100;
+
+  x = Math.max(0, Math.min(100, x));
+  y = Math.max(0, Math.min(100, y));
+
+  return {
+    x: Number(x.toFixed(2)),
+    y: Number(y.toFixed(2))
+  };
 }
 
 function showCar(car) {
@@ -510,13 +794,182 @@ function showCar(car) {
 
     mobileButton.style.display =
       "none";
-
   }
 
   document.getElementById(
     "card"
   ).style.display =
     "block";
+}
+
+document.getElementById(
+  "addCarButton"
+).addEventListener(
+  "click",
+  () => {
+
+    addPanel.style.display =
+      "block";
+  }
+);
+
+document.getElementById(
+  "cancelAddButton"
+).addEventListener(
+  "click",
+  () => {
+
+    addPanel.style.display =
+      "none";
+
+    placementMode = false;
+    pendingCar = null;
+
+    placementMessage.style.display =
+      "none";
+  }
+);
+
+document.getElementById(
+  "placeCarButton"
+).addEventListener(
+  "click",
+  () => {
+
+    const vin =
+      document.getElementById(
+        "newVin"
+      ).value.trim();
+
+    const fahrnummer =
+      document.getElementById(
+        "newFahrnummer"
+      ).value.trim();
+
+    if (!vin || !fahrnummer) {
+
+      alert(
+        "Bitte VIN und Fahrnummer eingeben."
+      );
+
+      return;
+    }
+
+    pendingCar = {
+      vin5: vin,
+      fahrnummer:
+        fahrnummer,
+      model:
+        document.getElementById(
+          "newModel"
+        ).value,
+      color:
+        document.getElementById(
+          "newColor"
+        ).value,
+      mobile_url:
+        document.getElementById(
+          "newMobileUrl"
+        ).value.trim()
+    };
+
+    placementMode = true;
+
+    addPanel.style.display =
+      "none";
+
+    placementMessage.style.display =
+      "block";
+  }
+);
+
+mapWrapper.addEventListener(
+  "click",
+  async event => {
+
+    if (!placementMode) return;
+
+    if (
+      event.target.classList.contains(
+        "marker"
+      )
+    ) return;
+
+    const pos =
+      getMapPercent(
+        event.clientX,
+        event.clientY
+      );
+
+    const newCar = {
+      ...pendingCar,
+      position_x: pos.x,
+      position_y: pos.y
+    };
+
+    try {
+
+      placementMessage.textContent =
+        "Fahrzeug wird gespeichert...";
+
+      const response =
+        await apiRequest(
+          "cars",
+          {
+            method: "POST",
+            headers: {
+              Prefer:
+                "return=representation"
+            },
+            body:
+              JSON.stringify(newCar)
+          }
+        );
+
+      const created =
+        await response.json();
+
+      if (created[0]) {
+        cars.push(created[0]);
+      }
+
+      placementMode = false;
+      pendingCar = null;
+
+      placementMessage.style.display =
+        "none";
+
+      clearAddForm();
+
+      renderCars();
+
+    } catch (error) {
+
+      console.error(error);
+
+      placementMessage.textContent =
+        "Fehler beim Speichern.";
+
+      alert(
+        "Fahrzeug konnte nicht gespeichert werden."
+      );
+    }
+  }
+);
+
+function clearAddForm() {
+
+  document.getElementById(
+    "newVin"
+  ).value = "";
+
+  document.getElementById(
+    "newFahrnummer"
+  ).value = "";
+
+  document.getElementById(
+    "newMobileUrl"
+  ).value = "";
 }
 
 document.getElementById(
@@ -529,7 +982,6 @@ document.getElementById(
       "card"
     ).style.display =
       "none";
-
   }
 );
 
