@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Parking Fahrzeugkarte</title>
 
   <style>
@@ -73,6 +74,16 @@
       color: #555;
     }
 
+    #placementMessage {
+      display: none;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      background: #fff7cc;
+      border: 1px solid #eab308;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
     #mapWrapper {
       position: relative;
       width: 100%;
@@ -80,7 +91,6 @@
       border-radius: 12px;
       background: #ddd;
       border: 1px solid #ccc;
-      touch-action: auto;
     }
 
     #parkingImage {
@@ -97,71 +107,232 @@
       pointer-events: none;
     }
 
+    /* ===== МАРКЕР МАШИНЫ ===== */
+
     .marker {
       position: absolute;
       transform: translate(-50%, -50%);
-      min-width: 52px;
-      height: 32px;
-      padding: 0 8px;
-      border: 2px solid white;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 12px;
-      box-shadow: 0 2px 7px rgba(0,0,0,.45);
+      width: 54px;
+      height: 78px;
+
+      border: 0;
+      padding: 0;
+      margin: 0;
+
+      background: transparent;
+
       cursor: grab;
       pointer-events: auto;
       touch-action: none;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      z-index: 5;
     }
 
     .marker:active {
       cursor: grabbing;
     }
 
-    .marker.white {
-      background: white;
-      color: black;
-      border-color: #333;
-    }
-
-    .marker.black {
-      background: #111;
-      color: white;
-    }
-
-    .marker.red {
-      background: #dc2626;
-      color: white;
-    }
-
-    .marker.orange {
-      background: #f97316;
-      color: black;
-    }
-
-    .marker.green {
-      background: #16a34a;
-      color: white;
-    }
-
     .marker.hidden {
-      opacity: .12;
+      opacity: 0.12;
     }
+
+    /* Корпус автомобиля */
+
+    .carShape {
+      position: relative;
+
+      width: 34px;
+      height: 58px;
+
+      background: var(--car-color, #ffffff);
+
+      border: 2px solid #222;
+      border-radius: 10px 10px 7px 7px;
+
+      box-shadow:
+        0 3px 8px rgba(0,0,0,.45);
+
+      flex-shrink: 0;
+    }
+
+    /* Transit / фургон */
+
+    .carShape.van {
+      width: 36px;
+      height: 62px;
+      border-radius: 7px;
+    }
+
+    /* Ranger */
+
+    .carShape.pickup {
+      width: 36px;
+      height: 60px;
+    }
+
+    /* Легковые */
+
+    .carShape.car {
+      width: 34px;
+      height: 54px;
+    }
+
+    /* Лобовое стекло */
+
+    .frontWindow {
+      position: absolute;
+
+      top: 8px;
+      left: 5px;
+      right: 5px;
+
+      height: 13px;
+
+      background: #374151;
+      border-radius: 5px 5px 2px 2px;
+
+      border: 1px solid rgba(255,255,255,.35);
+    }
+
+    /* Заднее стекло */
+
+    .rearWindow {
+      position: absolute;
+
+      bottom: 8px;
+      left: 6px;
+      right: 6px;
+
+      height: 11px;
+
+      background: #374151;
+      border-radius: 2px 2px 4px 4px;
+
+      border: 1px solid rgba(255,255,255,.35);
+    }
+
+    /* Центральная крыша */
+
+    .carRoof {
+      position: absolute;
+
+      top: 24px;
+      bottom: 22px;
+      left: 5px;
+      right: 5px;
+
+      border-radius: 4px;
+
+      border: 1px solid rgba(0,0,0,.25);
+    }
+
+    /* Колёса */
+
+    .wheel {
+      position: absolute;
+
+      width: 5px;
+      height: 13px;
+
+      background: #111;
+
+      border-radius: 3px;
+    }
+
+    .wheel.fl {
+      top: 11px;
+      left: -5px;
+    }
+
+    .wheel.fr {
+      top: 11px;
+      right: -5px;
+    }
+
+    .wheel.rl {
+      bottom: 10px;
+      left: -5px;
+    }
+
+    .wheel.rr {
+      bottom: 10px;
+      right: -5px;
+    }
+
+    /* Фары */
+
+    .headlight {
+      position: absolute;
+
+      top: 2px;
+
+      width: 7px;
+      height: 4px;
+
+      background: #fef08a;
+
+      border-radius: 2px;
+    }
+
+    .headlight.left {
+      left: 5px;
+    }
+
+    .headlight.right {
+      right: 5px;
+    }
+
+    /* Номер под машиной */
+
+    .carVin {
+      margin-top: 3px;
+
+      min-width: 38px;
+
+      padding: 2px 4px;
+
+      background: white;
+      color: #111;
+
+      border: 1px solid #333;
+      border-radius: 4px;
+
+      font-size: 9px;
+      line-height: 12px;
+      font-weight: bold;
+
+      text-align: center;
+
+      box-shadow:
+        0 1px 4px rgba(0,0,0,.3);
+    }
+
+    /* ===== КАРТОЧКА ===== */
 
     #card,
     #addPanel {
       display: none;
+
       position: fixed;
       left: 50%;
+
       transform: translateX(-50%);
+
       width: calc(100% - 30px);
       max-width: 440px;
+
       background: white;
+
       border-radius: 14px;
       padding: 18px;
-      box-shadow: 0 10px 40px rgba(0,0,0,.3);
+
+      box-shadow:
+        0 10px 40px rgba(0,0,0,.3);
+
       z-index: 30;
     }
 
@@ -188,9 +359,11 @@
 
     .formRow label {
       display: block;
+
       font-size: 13px;
-      margin-bottom: 4px;
       font-weight: bold;
+
+      margin-bottom: 4px;
     }
 
     .formRow input,
@@ -201,6 +374,7 @@
     .panelActions {
       display: flex;
       gap: 8px;
+
       margin-top: 14px;
     }
 
@@ -220,38 +394,41 @@
 
     #closeCard {
       float: right;
+
       border: 0;
+
       background: #eee;
+
       border-radius: 50%;
+
       width: 34px;
       height: 34px;
+
       cursor: pointer;
+
       font-size: 18px;
+
       padding: 0;
     }
 
     .mobileButton {
       display: block;
+
       margin-top: 14px;
       padding: 12px;
+
       text-align: center;
+
       background: #2563eb;
       color: white;
+
       border-radius: 8px;
+
       text-decoration: none;
     }
 
-    #placementMessage {
-      display: none;
-      margin-bottom: 10px;
-      padding: 10px 12px;
-      background: #fff7cc;
-      border: 1px solid #eab308;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
     @media (max-width: 600px) {
+
       main {
         padding: 8px;
       }
@@ -261,19 +438,26 @@
       }
 
       .marker {
-        min-width: 46px;
-        height: 30px;
+        width: 48px;
+        height: 70px;
+      }
+
+      .carShape {
+        transform: scale(.9);
       }
     }
+
   </style>
 </head>
 
 <body>
 
 <header>
+
   <h1>Parking · Fahrzeugkarte</h1>
 
   <div class="toolbar">
+
     <input
       id="search"
       type="search"
@@ -281,7 +465,11 @@
     >
 
     <select id="modelFilter">
-      <option value="">Alle Modelle</option>
+
+      <option value="">
+        Alle Modelle
+      </option>
+
       <option>Ford Transit</option>
       <option>Ford Transit Courier</option>
       <option>Ford Transit Custom</option>
@@ -291,58 +479,119 @@
       <option>Ford Ranger</option>
       <option>Ford Ranger Wildtrak</option>
       <option>Ford Focus</option>
+
     </select>
 
     <select id="colorFilter">
-      <option value="">Alle Farben</option>
-      <option value="White">Weiß</option>
-      <option value="Black">Schwarz</option>
-      <option value="Red">Rot</option>
-      <option value="Orange">Orange</option>
-      <option value="Green">Grün</option>
+
+      <option value="">
+        Alle Farben
+      </option>
+
+      <option value="White">
+        Weiß
+      </option>
+
+      <option value="Black">
+        Schwarz
+      </option>
+
+      <option value="Red">
+        Rot
+      </option>
+
+      <option value="Orange">
+        Orange
+      </option>
+
+      <option value="Green">
+        Grün
+      </option>
+
     </select>
 
-    <button id="addCarButton" type="button">
+    <button
+      id="addCarButton"
+      type="button"
+    >
       + Fahrzeug hinzufügen
     </button>
+
   </div>
+
 </header>
 
 <main>
 
-  <div id="status">Fahrzeuge werden geladen...</div>
+  <div id="status">
+    Fahrzeuge werden geladen...
+  </div>
 
   <div id="placementMessage">
     Klicke jetzt auf die gewünschte Position auf dem Parkplatz.
   </div>
 
   <div id="mapWrapper">
+
     <img
       id="parkingImage"
       src="./parking.png?v=3"
       alt="Parkplatz"
     >
+
     <div id="markers"></div>
+
   </div>
 
 </main>
 
+
+<!-- НОВАЯ МАШИНА -->
+
 <div id="addPanel">
-  <h2>Fahrzeug hinzufügen</h2>
+
+  <h2>
+    Fahrzeug hinzufügen
+  </h2>
 
   <div class="formRow">
-    <label for="newVin">VIN</label>
-    <input id="newVin" type="text" placeholder="z.B. 12345">
+
+    <label for="newVin">
+      VIN
+    </label>
+
+    <input
+      id="newVin"
+      type="text"
+      placeholder="z.B. 12345"
+    >
+
   </div>
 
-  <div class="formRow">
-    <label for="newFahrnummer">Fahrnummer</label>
-    <input id="newFahrnummer" type="text" placeholder="z.B. 999">
-  </div>
 
   <div class="formRow">
-    <label for="newModel">Modell</label>
+
+    <label for="newFahrnummer">
+      Fahrnummer
+    </label>
+
+    <input
+      id="newFahrnummer"
+      type="text"
+      placeholder="z.B. 999"
+    >
+
+  </div>
+
+
+  <div class="formRow">
+
+    <label for="newModel">
+      Modell
+    </label>
+
     <select id="newModel">
+
       <option>Ford Transit</option>
       <option>Ford Transit Courier</option>
       <option>Ford Transit Custom</option>
@@ -352,38 +601,91 @@
       <option>Ford Ranger</option>
       <option>Ford Ranger Wildtrak</option>
       <option>Ford Focus</option>
+
     </select>
+
   </div>
 
+
   <div class="formRow">
-    <label for="newColor">Farbe</label>
+
+    <label for="newColor">
+      Farbe
+    </label>
+
     <select id="newColor">
-      <option value="White">Weiß</option>
-      <option value="Black">Schwarz</option>
-      <option value="Red">Rot</option>
-      <option value="Orange">Orange</option>
-      <option value="Green">Grün</option>
+
+      <option value="White">
+        Weiß
+      </option>
+
+      <option value="Black">
+        Schwarz
+      </option>
+
+      <option value="Red">
+        Rot
+      </option>
+
+      <option value="Orange">
+        Orange
+      </option>
+
+      <option value="Green">
+        Grün
+      </option>
+
     </select>
+
   </div>
 
+
   <div class="formRow">
-    <label for="newMobileUrl">Mobile.de URL (optional)</label>
-    <input id="newMobileUrl" type="url" placeholder="https://...">
+
+    <label for="newMobileUrl">
+      Mobile.de URL
+    </label>
+
+    <input
+      id="newMobileUrl"
+      type="url"
+      placeholder="https://..."
+    >
+
   </div>
+
 
   <div class="panelActions">
-    <button id="cancelAddButton" type="button">
+
+    <button
+      id="cancelAddButton"
+      type="button"
+    >
       Abbrechen
     </button>
 
-    <button id="placeCarButton" type="button">
+    <button
+      id="placeCarButton"
+      type="button"
+    >
       Auf Parkplatz setzen
     </button>
+
   </div>
+
 </div>
 
+
+<!-- КАРТОЧКА -->
+
 <div id="card">
-  <button id="closeCard" type="button">×</button>
+
+  <button
+    id="closeCard"
+    type="button"
+  >
+    ×
+  </button>
 
   <h2 id="cardModel"></h2>
 
@@ -410,9 +712,15 @@
   >
     Mobile.de öffnen
   </a>
+
 </div>
 
+
 <script>
+
+/* =========================
+   SUPABASE
+========================= */
 
 const SUPABASE_URL =
   "https://cydestwofhdfsmekwxho.supabase.co";
@@ -420,10 +728,19 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_LNyn0n-rbQfu5AIMeAt9XQ_zqSpQ3Dh";
 
+
 let cars = [];
+
 let placementMode = false;
+
 let pendingCar = null;
+
 let dragged = false;
+
+
+/* =========================
+   ELEMENTE
+========================= */
 
 const markers =
   document.getElementById("markers");
@@ -447,558 +764,1240 @@ const addPanel =
   document.getElementById("addPanel");
 
 const placementMessage =
-  document.getElementById("placementMessage");
-
-async function apiRequest(path, options = {}) {
-
-  const response = await fetch(
-    SUPABASE_URL + "/rest/v1/" + path,
-    {
-      ...options,
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: "Bearer " + SUPABASE_KEY,
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      }
-    }
+  document.getElementById(
+    "placementMessage"
   );
 
+
+/* =========================
+   API
+========================= */
+
+async function apiRequest(
+  path,
+  options = {}
+) {
+
+  const response =
+    await fetch(
+
+      SUPABASE_URL +
+      "/rest/v1/" +
+      path,
+
+      {
+
+        ...options,
+
+        headers: {
+
+          apikey:
+            SUPABASE_KEY,
+
+          Authorization:
+            "Bearer " +
+            SUPABASE_KEY,
+
+          "Content-Type":
+            "application/json",
+
+          ...(options.headers || {})
+
+        }
+
+      }
+
+    );
+
+
   if (!response.ok) {
-    throw new Error(await response.text());
+
+    throw new Error(
+      await response.text()
+    );
+
   }
+
 
   return response;
 }
+
+
+/* =========================
+   LOAD
+========================= */
 
 async function loadCars() {
 
   try {
 
-    const response = await apiRequest(
-      "cars?select=*&order=id.asc"
-    );
+    const response =
+      await apiRequest(
+        "cars?select=*&order=id.asc"
+      );
 
-    cars = await response.json();
+
+    cars =
+      await response.json();
+
 
     renderCars();
 
-  } catch (error) {
+  }
+
+  catch (error) {
 
     console.error(error);
 
     status.textContent =
       "Fehler beim Laden der Fahrzeuge.";
+
   }
+
 }
 
-function getColorClass(color) {
 
-  const c = (color || "").toLowerCase();
+/* =========================
+   COLOR
+========================= */
+
+function getCarColor(color) {
+
+  const c =
+    (color || "")
+      .toLowerCase();
+
 
   if (
     c.includes("white") ||
     c.includes("weiß")
-  ) return "white";
+  ) {
+    return "#ffffff";
+  }
+
 
   if (
     c.includes("black") ||
     c.includes("schwarz")
-  ) return "black";
+  ) {
+    return "#171717";
+  }
+
 
   if (
     c.includes("red") ||
     c.includes("rot")
-  ) return "red";
+  ) {
+    return "#dc2626";
+  }
 
-  if (c.includes("orange"))
-    return "orange";
+
+  if (
+    c.includes("orange")
+  ) {
+    return "#f97316";
+  }
+
 
   if (
     c.includes("green") ||
     c.includes("grün")
-  ) return "green";
+  ) {
+    return "#16a34a";
+  }
 
-  return "black";
+
+  return "#6b7280";
 }
+
+
+/* =========================
+   TYP DER KAROSSERIE
+========================= */
+
+function getVehicleType(model) {
+
+  const m =
+    (model || "")
+      .toLowerCase();
+
+
+  if (
+    m.includes("ranger")
+  ) {
+    return "pickup";
+  }
+
+
+  if (
+    m.includes("transit")
+  ) {
+    return "van";
+  }
+
+
+  return "car";
+}
+
+
+/* =========================
+   FILTER
+========================= */
 
 function carMatches(car) {
 
   const q =
-    search.value.trim().toLowerCase();
+    search.value
+      .trim()
+      .toLowerCase();
+
 
   const searchText =
     `${car.vin5 || ""} ${car.fahrnummer || ""}`
       .toLowerCase();
 
-  if (q && !searchText.includes(q))
+
+  if (
+    q &&
+    !searchText.includes(q)
+  ) {
     return false;
+  }
+
 
   if (
     modelFilter.value &&
-    car.model !== modelFilter.value
-  )
+    car.model !==
+      modelFilter.value
+  ) {
     return false;
+  }
+
 
   if (
     colorFilter.value &&
-    car.color !== colorFilter.value
-  )
+    car.color !==
+      colorFilter.value
+  ) {
     return false;
+  }
+
 
   return true;
 }
+
+
+/* =========================
+   AUTO GRAFIK ERSTELLEN
+========================= */
+
+function createCarGraphic(car) {
+
+  const shape =
+    document.createElement("div");
+
+
+  shape.className =
+    "carShape " +
+    getVehicleType(car.model);
+
+
+  shape.style.setProperty(
+    "--car-color",
+    getCarColor(car.color)
+  );
+
+
+  const frontWindow =
+    document.createElement("div");
+
+  frontWindow.className =
+    "frontWindow";
+
+
+  const roof =
+    document.createElement("div");
+
+  roof.className =
+    "carRoof";
+
+
+  const rearWindow =
+    document.createElement("div");
+
+  rearWindow.className =
+    "rearWindow";
+
+
+  const wheelFL =
+    document.createElement("div");
+
+  wheelFL.className =
+    "wheel fl";
+
+
+  const wheelFR =
+    document.createElement("div");
+
+  wheelFR.className =
+    "wheel fr";
+
+
+  const wheelRL =
+    document.createElement("div");
+
+  wheelRL.className =
+    "wheel rl";
+
+
+  const wheelRR =
+    document.createElement("div");
+
+  wheelRR.className =
+    "wheel rr";
+
+
+  const lightLeft =
+    document.createElement("div");
+
+  lightLeft.className =
+    "headlight left";
+
+
+  const lightRight =
+    document.createElement("div");
+
+  lightRight.className =
+    "headlight right";
+
+
+  shape.appendChild(
+    frontWindow
+  );
+
+  shape.appendChild(
+    roof
+  );
+
+  shape.appendChild(
+    rearWindow
+  );
+
+  shape.appendChild(
+    wheelFL
+  );
+
+  shape.appendChild(
+    wheelFR
+  );
+
+  shape.appendChild(
+    wheelRL
+  );
+
+  shape.appendChild(
+    wheelRR
+  );
+
+  shape.appendChild(
+    lightLeft
+  );
+
+  shape.appendChild(
+    lightRight
+  );
+
+
+  return shape;
+}
+
+
+/* =========================
+   RENDER
+========================= */
 
 function renderCars() {
 
   markers.innerHTML = "";
 
+
   let visibleCount = 0;
 
+
   cars.forEach(car => {
+
 
     if (
       car.position_x == null ||
       car.position_y == null
-    ) return;
+    ) {
+
+      return;
+
+    }
+
 
     const marker =
-      document.createElement("button");
+      document.createElement(
+        "button"
+      );
 
-    marker.type = "button";
+
+    marker.type =
+      "button";
+
 
     marker.className =
-      "marker " + getColorClass(car.color);
+      "marker";
+
 
     marker.style.left =
       car.position_x + "%";
 
+
     marker.style.top =
       car.position_y + "%";
 
-    marker.textContent =
+
+    /* AUTO */
+
+    const carGraphic =
+      createCarGraphic(car);
+
+
+    marker.appendChild(
+      carGraphic
+    );
+
+
+    /* VIN */
+
+    const vinLabel =
+      document.createElement(
+        "span"
+      );
+
+
+    vinLabel.className =
+      "carVin";
+
+
+    vinLabel.textContent =
       car.vin5 || "?";
+
+
+    marker.appendChild(
+      vinLabel
+    );
+
 
     if (!carMatches(car)) {
 
-      marker.classList.add("hidden");
+      marker.classList.add(
+        "hidden"
+      );
 
-    } else {
-
-      visibleCount++;
     }
 
-    enableDrag(marker, car);
+    else {
+
+      visibleCount++;
+
+    }
+
+
+    enableDrag(
+      marker,
+      car
+    );
+
 
     marker.addEventListener(
       "click",
       () => {
+
         if (!dragged) {
+
           showCar(car);
+
         }
+
       }
     );
 
-    markers.appendChild(marker);
+
+    markers.appendChild(
+      marker
+    );
+
   });
 
+
   status.textContent =
+
     visibleCount +
+
     " Fahrzeug" +
-    (visibleCount === 1 ? "" : "e") +
+
+    (
+      visibleCount === 1
+        ? ""
+        : "e"
+    ) +
+
     " angezeigt";
+
 }
 
-function enableDrag(marker, car) {
+
+/* =========================
+   DRAG
+========================= */
+
+function enableDrag(
+  marker,
+  car
+) {
 
   let startX = 0;
+
   let startY = 0;
+
 
   marker.addEventListener(
     "pointerdown",
+
     event => {
 
-      if (placementMode) return;
+
+      if (placementMode) {
+        return;
+      }
+
 
       dragged = false;
 
-      startX = event.clientX;
-      startY = event.clientY;
+
+      startX =
+        event.clientX;
+
+
+      startY =
+        event.clientY;
+
 
       marker.setPointerCapture(
         event.pointerId
       );
+
     }
   );
 
+
   marker.addEventListener(
     "pointermove",
+
     event => {
 
+
       if (
+
         !marker.hasPointerCapture(
           event.pointerId
         )
-      ) return;
+
+      ) {
+
+        return;
+
+      }
+
 
       const distance =
         Math.hypot(
-          event.clientX - startX,
-          event.clientY - startY
+
+          event.clientX -
+          startX,
+
+          event.clientY -
+          startY
+
         );
 
+
       if (distance > 4) {
+
         dragged = true;
+
       }
 
-      if (!dragged) return;
+
+      if (!dragged) {
+
+        return;
+
+      }
+
 
       const pos =
         getMapPercent(
+
           event.clientX,
+
           event.clientY
+
         );
+
 
       marker.style.left =
         pos.x + "%";
 
+
       marker.style.top =
         pos.y + "%";
+
     }
   );
 
+
   marker.addEventListener(
     "pointerup",
+
     async event => {
 
+
       if (
+
         !marker.hasPointerCapture(
           event.pointerId
         )
-      ) return;
+
+      ) {
+
+        return;
+
+      }
+
 
       marker.releasePointerCapture(
         event.pointerId
       );
 
-      if (!dragged) return;
+
+      if (!dragged) {
+
+        return;
+
+      }
+
 
       const pos =
         getMapPercent(
+
           event.clientX,
+
           event.clientY
+
         );
 
+
       try {
+
 
         status.textContent =
           "Position wird gespeichert...";
 
+
         await apiRequest(
+
           `cars?id=eq.${car.id}`,
+
           {
-            method: "PATCH",
+
+            method:
+              "PATCH",
+
             headers: {
-              Prefer: "return=minimal"
+
+              Prefer:
+                "return=minimal"
+
             },
-            body: JSON.stringify({
-              position_x: pos.x,
-              position_y: pos.y
-            })
+
+            body:
+              JSON.stringify({
+
+                position_x:
+                  pos.x,
+
+                position_y:
+                  pos.y
+
+              })
+
           }
+
         );
 
-        car.position_x = pos.x;
-        car.position_y = pos.y;
+
+        car.position_x =
+          pos.x;
+
+
+        car.position_y =
+          pos.y;
+
 
         status.textContent =
           "Position gespeichert.";
 
+
         setTimeout(
           renderCars,
-          500
+          400
         );
 
-      } catch (error) {
+      }
 
-        console.error(error);
+      catch (error) {
+
+
+        console.error(
+          error
+        );
+
 
         alert(
           "Position konnte nicht gespeichert werden."
         );
 
+
         renderCars();
+
       }
+
     }
   );
+
 }
 
-function getMapPercent(clientX, clientY) {
+
+/* =========================
+   KOORDINATEN
+========================= */
+
+function getMapPercent(
+  clientX,
+  clientY
+) {
 
   const rect =
-    mapWrapper.getBoundingClientRect();
+    mapWrapper
+      .getBoundingClientRect();
+
 
   let x =
-    ((clientX - rect.left) /
-      rect.width) * 100;
+
+    (
+      (
+        clientX -
+        rect.left
+      )
+      /
+      rect.width
+    )
+    *
+    100;
+
 
   let y =
-    ((clientY - rect.top) /
-      rect.height) * 100;
 
-  x = Math.max(0, Math.min(100, x));
-  y = Math.max(0, Math.min(100, y));
+    (
+      (
+        clientY -
+        rect.top
+      )
+      /
+      rect.height
+    )
+    *
+    100;
+
+
+  x =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        x
+      )
+    );
+
+
+  y =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        y
+      )
+    );
+
 
   return {
-    x: Number(x.toFixed(2)),
-    y: Number(y.toFixed(2))
+
+    x:
+      Number(
+        x.toFixed(2)
+      ),
+
+    y:
+      Number(
+        y.toFixed(2)
+      )
+
   };
+
 }
 
+
+/* =========================
+   CARD
+========================= */
+
 function showCar(car) {
+
 
   document.getElementById(
     "cardModel"
   ).textContent =
-    car.model || "Fahrzeug";
+
+    car.model ||
+    "Fahrzeug";
+
 
   document.getElementById(
     "cardVin"
   ).textContent =
-    car.vin5 || "-";
+
+    car.vin5 ||
+    "-";
+
 
   document.getElementById(
     "cardFahrnummer"
   ).textContent =
-    car.fahrnummer || "-";
+
+    car.fahrnummer ||
+    "-";
+
 
   document.getElementById(
     "cardColor"
   ).textContent =
-    car.color || "-";
+
+    car.color ||
+    "-";
+
 
   const mobileButton =
+
     document.getElementById(
       "mobileButton"
     );
 
+
   if (car.mobile_url) {
+
 
     mobileButton.href =
       car.mobile_url;
 
+
     mobileButton.style.display =
       "block";
 
-  } else {
+
+  }
+
+  else {
+
 
     mobileButton.style.display =
       "none";
+
+
   }
+
 
   document.getElementById(
     "card"
   ).style.display =
     "block";
+
 }
+
+
+/* =========================
+   ADD PANEL
+========================= */
 
 document.getElementById(
   "addCarButton"
 ).addEventListener(
+
   "click",
+
   () => {
 
     addPanel.style.display =
       "block";
+
   }
+
 );
+
 
 document.getElementById(
   "cancelAddButton"
 ).addEventListener(
+
   "click",
+
   () => {
+
 
     addPanel.style.display =
       "none";
 
-    placementMode = false;
-    pendingCar = null;
+
+    placementMode =
+      false;
+
+
+    pendingCar =
+      null;
+
 
     placementMessage.style.display =
       "none";
+
   }
+
 );
+
+
+/* =========================
+   PLATZIEREN
+========================= */
 
 document.getElementById(
   "placeCarButton"
 ).addEventListener(
+
   "click",
+
   () => {
 
+
     const vin =
+
       document.getElementById(
         "newVin"
-      ).value.trim();
+      )
+      .value
+      .trim();
+
 
     const fahrnummer =
+
       document.getElementById(
         "newFahrnummer"
-      ).value.trim();
+      )
+      .value
+      .trim();
 
-    if (!vin || !fahrnummer) {
+
+    if (
+      !vin ||
+      !fahrnummer
+    ) {
+
 
       alert(
         "Bitte VIN und Fahrnummer eingeben."
       );
 
+
       return;
+
     }
 
+
     pendingCar = {
-      vin5: vin,
+
+      vin5:
+        vin,
+
       fahrnummer:
         fahrnummer,
+
       model:
+
         document.getElementById(
           "newModel"
         ).value,
+
       color:
+
         document.getElementById(
           "newColor"
         ).value,
+
       mobile_url:
+
         document.getElementById(
           "newMobileUrl"
-        ).value.trim()
+        )
+        .value
+        .trim()
+
     };
 
-    placementMode = true;
+
+    placementMode =
+      true;
+
 
     addPanel.style.display =
       "none";
 
+
     placementMessage.style.display =
       "block";
+
   }
+
 );
 
+
+/* =========================
+   PARKPLATZ CLICK
+========================= */
+
 mapWrapper.addEventListener(
+
   "click",
+
   async event => {
 
-    if (!placementMode) return;
+
+    if (!placementMode) {
+
+      return;
+
+    }
+
 
     if (
-      event.target.classList.contains(
-        "marker"
+      event.target.closest(
+        ".marker"
       )
-    ) return;
+    ) {
+
+      return;
+
+    }
+
 
     const pos =
+
       getMapPercent(
+
         event.clientX,
+
         event.clientY
+
       );
 
+
     const newCar = {
+
       ...pendingCar,
-      position_x: pos.x,
-      position_y: pos.y
+
+      position_x:
+        pos.x,
+
+      position_y:
+        pos.y
+
     };
 
+
     try {
+
 
       placementMessage.textContent =
         "Fahrzeug wird gespeichert...";
 
+
       const response =
+
         await apiRequest(
+
           "cars",
+
           {
-            method: "POST",
+
+            method:
+              "POST",
+
             headers: {
+
               Prefer:
                 "return=representation"
+
             },
+
             body:
-              JSON.stringify(newCar)
+
+              JSON.stringify(
+                newCar
+              )
+
           }
+
         );
+
 
       const created =
         await response.json();
 
+
       if (created[0]) {
-        cars.push(created[0]);
+
+        cars.push(
+          created[0]
+        );
+
       }
 
-      placementMode = false;
-      pendingCar = null;
+
+      placementMode =
+        false;
+
+
+      pendingCar =
+        null;
+
 
       placementMessage.style.display =
         "none";
 
+
       clearAddForm();
+
 
       renderCars();
 
-    } catch (error) {
+    }
 
-      console.error(error);
+    catch (error) {
+
+
+      console.error(
+        error
+      );
+
 
       placementMessage.textContent =
         "Fehler beim Speichern.";
 
+
       alert(
         "Fahrzeug konnte nicht gespeichert werden."
       );
+
     }
+
   }
+
 );
+
+
+/* =========================
+   FORM RESET
+========================= */
 
 function clearAddForm() {
 
   document.getElementById(
     "newVin"
-  ).value = "";
+  ).value =
+    "";
+
 
   document.getElementById(
     "newFahrnummer"
-  ).value = "";
+  ).value =
+    "";
+
 
   document.getElementById(
     "newMobileUrl"
-  ).value = "";
+  ).value =
+    "";
+
 }
+
+
+/* =========================
+   CLOSE CARD
+========================= */
 
 document.getElementById(
   "closeCard"
 ).addEventListener(
+
   "click",
+
   () => {
 
     document.getElementById(
       "card"
     ).style.display =
       "none";
+
   }
+
 );
+
+
+/* =========================
+   FILTER EVENTS
+========================= */
 
 search.addEventListener(
   "input",
   renderCars
 );
 
+
 modelFilter.addEventListener(
   "change",
   renderCars
 );
 
+
 colorFilter.addEventListener(
   "change",
   renderCars
 );
+
+
+/* =========================
+   START
+========================= */
 
 loadCars();
 
