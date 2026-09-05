@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Parking Fahrzeugkarte</title>
+  <title>Parking · Fahrzeugkarte</title>
 
   <style>
     * {
@@ -21,34 +21,34 @@
     header {
       background: #111827;
       color: white;
-      padding: 16px;
+      padding: 12px;
     }
 
     header h1 {
-      margin: 0 0 12px;
-      font-size: 22px;
+      margin: 0 0 10px;
+      font-size: 20px;
     }
 
     .toolbar {
       display: flex;
+      gap: 7px;
       flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
     }
 
     input,
     select,
     button {
-      min-height: 42px;
-      padding: 8px 12px;
-      border-radius: 8px;
+      min-height: 40px;
+      padding: 8px 11px;
+      border-radius: 7px;
       border: 1px solid #ccc;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     input {
       flex: 1;
-      min-width: 180px;
+      min-width: 170px;
     }
 
     button {
@@ -65,19 +65,19 @@
     main {
       max-width: 1400px;
       margin: auto;
-      padding: 16px;
+      padding: 12px;
     }
 
     #status {
-      margin-bottom: 10px;
-      font-size: 14px;
+      margin-bottom: 8px;
+      font-size: 13px;
       color: #555;
     }
 
     #placementMessage {
       display: none;
-      margin-bottom: 10px;
-      padding: 10px 12px;
+      margin-bottom: 8px;
+      padding: 10px;
       background: #fff7cc;
       border: 1px solid #eab308;
       border-radius: 8px;
@@ -88,7 +88,7 @@
       position: relative;
       width: 100%;
       overflow: hidden;
-      border-radius: 12px;
+      border-radius: 10px;
       background: #ddd;
       border: 1px solid #ccc;
     }
@@ -107,21 +107,31 @@
       pointer-events: none;
     }
 
+    /* =========================
+       MARKER
+    ========================= */
+
     .marker {
       position: absolute;
       transform: translate(-50%, -50%);
-      width: 54px;
-      height: 78px;
+      width: 36px;
+      min-height: 52px;
+
       border: 0;
-      padding: 0;
       margin: 0;
+      padding: 0;
+
       background: transparent;
-      cursor: grab;
+
       pointer-events: auto;
       touch-action: none;
+
+      cursor: grab;
+
       display: flex;
       flex-direction: column;
       align-items: center;
+
       z-index: 5;
     }
 
@@ -130,158 +140,263 @@
     }
 
     .marker.hidden {
-      opacity: 0.12;
+      opacity: 0.15;
     }
+
+    /* =========================
+       ALL CARS
+    ========================= */
 
     .carShape {
       position: relative;
-      width: 34px;
-      height: 58px;
-      background: var(--car-color, #ffffff);
-      border: 2px solid #222;
-      border-radius: 10px 10px 7px 7px;
-      box-shadow: 0 3px 8px rgba(0,0,0,.45);
+
+      width: 22px;
+      height: 36px;
+
+      background: var(--car-color, #fff);
+
+      border: 1.5px solid #222;
+      border-radius: 5px;
+
+      box-shadow: 0 2px 4px rgba(0,0,0,.45);
+
       flex-shrink: 0;
-    }
-
-    .carShape.van {
-      width: 36px;
-      height: 62px;
-      border-radius: 7px;
-    }
-
-    .carShape.pickup {
-      width: 36px;
-      height: 60px;
-    }
-
-    .carShape.car {
-      width: 34px;
-      height: 54px;
     }
 
     .frontWindow {
       position: absolute;
-      top: 8px;
-      left: 5px;
-      right: 5px;
-      height: 13px;
+      top: 5px;
+      left: 3px;
+      right: 3px;
+
+      height: 7px;
+
       background: #374151;
-      border-radius: 5px 5px 2px 2px;
-      border: 1px solid rgba(255,255,255,.35);
+
+      border-radius: 3px 3px 1px 1px;
     }
 
     .rearWindow {
       position: absolute;
-      bottom: 8px;
-      left: 6px;
-      right: 6px;
-      height: 11px;
+      bottom: 5px;
+      left: 4px;
+      right: 4px;
+
+      height: 6px;
+
       background: #374151;
-      border-radius: 2px 2px 4px 4px;
-      border: 1px solid rgba(255,255,255,.35);
+
+      border-radius: 1px 1px 3px 3px;
     }
 
-    .carRoof {
+    .roof {
       position: absolute;
-      top: 24px;
-      bottom: 22px;
-      left: 5px;
-      right: 5px;
-      border-radius: 4px;
+      top: 14px;
+      bottom: 13px;
+      left: 4px;
+      right: 4px;
+
       border: 1px solid rgba(0,0,0,.25);
+      border-radius: 2px;
     }
 
     .wheel {
       position: absolute;
-      width: 5px;
-      height: 13px;
+
+      width: 3px;
+      height: 8px;
+
       background: #111;
-      border-radius: 3px;
+
+      border-radius: 2px;
     }
 
     .wheel.fl {
-      top: 11px;
-      left: -5px;
+      left: -3px;
+      top: 7px;
     }
 
     .wheel.fr {
-      top: 11px;
-      right: -5px;
+      right: -3px;
+      top: 7px;
     }
 
     .wheel.rl {
-      bottom: 10px;
-      left: -5px;
+      left: -3px;
+      bottom: 6px;
     }
 
     .wheel.rr {
-      bottom: 10px;
-      right: -5px;
+      right: -3px;
+      bottom: 6px;
     }
 
     .headlight {
       position: absolute;
-      top: 2px;
-      width: 7px;
-      height: 4px;
-      background: #fef08a;
-      border-radius: 2px;
+
+      top: 1px;
+
+      width: 4px;
+      height: 2px;
+
+      background: #fde047;
     }
 
     .headlight.left {
-      left: 5px;
+      left: 3px;
     }
 
     .headlight.right {
-      right: 5px;
+      right: 3px;
+    }
+
+    /* =========================
+       MODEL SHAPES
+    ========================= */
+
+    /* PUMA */
+    .carShape.puma {
+      width: 22px;
+      height: 34px;
+      border-radius: 8px 8px 5px 5px;
+    }
+
+    /* TRANSIT */
+    .carShape.transit {
+      width: 23px;
+      height: 42px;
+      border-radius: 4px;
+    }
+
+    .carShape.transit .rearWindow {
+      bottom: 4px;
+    }
+
+    /* TRANSPORTER */
+    .carShape.transporter {
+      width: 24px;
+      height: 40px;
+      border-radius: 3px;
+    }
+
+    .carShape.transporter .roof {
+      left: 3px;
+      right: 3px;
+    }
+
+    /* RANGER */
+    .carShape.ranger {
+      width: 24px;
+      height: 39px;
+      border-radius: 5px;
+    }
+
+    .carShape.ranger::after {
+      content: "";
+      position: absolute;
+
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+
+      height: 10px;
+
+      border: 1px solid rgba(0,0,0,.5);
+      border-radius: 1px;
+
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 2px,
+          rgba(0,0,0,.15) 2px,
+          rgba(0,0,0,.15) 3px
+        );
+    }
+
+    .carShape.ranger .rearWindow {
+      display: none;
+    }
+
+    /* KUGA */
+    .carShape.kuga {
+      width: 24px;
+      height: 36px;
+      border-radius: 7px;
+    }
+
+    /* CAPRI */
+    .carShape.capri {
+      width: 22px;
+      height: 35px;
+      border-radius: 9px 9px 5px 5px;
     }
 
     .carVin {
-      margin-top: 3px;
-      min-width: 38px;
-      padding: 2px 4px;
+      margin-top: 2px;
+
+      min-width: 31px;
+
+      padding: 1px 3px;
+
       background: white;
       color: #111;
+
       border: 1px solid #333;
-      border-radius: 4px;
-      font-size: 9px;
-      line-height: 12px;
+      border-radius: 3px;
+
+      font-size: 7px;
+      line-height: 9px;
       font-weight: bold;
+
       text-align: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+
+      box-shadow: 0 1px 3px rgba(0,0,0,.3);
     }
+
+    /* =========================
+       PANELS
+    ========================= */
 
     #card,
     #addPanel {
       display: none;
+
       position: fixed;
+
       left: 50%;
+
       transform: translateX(-50%);
+
       width: calc(100% - 30px);
-      max-width: 440px;
+      max-width: 450px;
+
       background: white;
+
       border-radius: 14px;
+
       padding: 18px;
+
       box-shadow: 0 10px 40px rgba(0,0,0,.3);
+
       z-index: 30;
     }
 
     #card {
-      bottom: 20px;
+      bottom: 18px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     #addPanel {
-      top: 90px;
+      top: 80px;
+      max-height: 85vh;
+      overflow-y: auto;
     }
 
     #card h2,
     #addPanel h2 {
       margin: 0 0 14px;
-    }
-
-    .row {
-      margin: 7px 0;
     }
 
     .formRow {
@@ -290,14 +405,33 @@
 
     .formRow label {
       display: block;
+
+      margin-bottom: 4px;
+
       font-size: 13px;
       font-weight: bold;
-      margin-bottom: 4px;
     }
 
     .formRow input,
     .formRow select {
       width: 100%;
+    }
+
+    #closeCard {
+      float: right;
+
+      width: 34px;
+      height: 34px;
+
+      padding: 0;
+
+      border: 0;
+
+      border-radius: 50%;
+
+      background: #eee;
+
+      font-size: 19px;
     }
 
     .panelActions {
@@ -314,71 +448,73 @@
       background: #2563eb;
       color: white;
       border: 0;
-    }
-
-    #cancelAddButton {
-      background: #eee;
-    }
-
-    #closeCard {
-      float: right;
-      border: 0;
-      background: #eee;
-      border-radius: 50%;
-      width: 34px;
-      height: 34px;
-      cursor: pointer;
-      font-size: 18px;
-      padding: 0;
+      font-weight: bold;
     }
 
     #saveCarButton {
       width: 100%;
-      margin-top: 12px;
+
+      margin-top: 10px;
+
       background: #2563eb;
       color: white;
+
       border: 0;
+
       font-weight: bold;
     }
 
     #deleteCarButton {
       width: 100%;
+
       margin-top: 8px;
+
       background: #dc2626;
       color: white;
+
       border: 0;
+
       font-weight: bold;
     }
 
     .mobileButton {
       display: block;
-      margin-top: 12px;
-      padding: 12px;
-      text-align: center;
+
+      margin-top: 8px;
+
+      padding: 11px;
+
       background: #16a34a;
       color: white;
-      border-radius: 8px;
+
       text-decoration: none;
+      text-align: center;
+
+      border-radius: 8px;
+
+      font-weight: bold;
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 700px) {
+
       main {
-        padding: 8px;
+        padding: 6px;
       }
 
       header {
-        padding: 12px;
+        padding: 8px;
       }
 
       .marker {
-        width: 48px;
-        height: 70px;
+        width: 32px;
       }
 
       .carShape {
         transform: scale(.9);
       }
+
     }
+
   </style>
 </head>
 
@@ -386,31 +522,56 @@
 
 <header>
 
-  <h1>Parking · Fahrzeugkarte</h1>
+  <h1>
+    Parking · Fahrzeugkarte
+  </h1>
 
   <div class="toolbar">
 
     <input
       id="search"
       type="search"
-      placeholder="VIN oder Fahrnummer suchen"
+      placeholder="VIN oder Fahrzeugnummer suchen"
     >
 
     <select id="modelFilter">
-      <option value="">Alle Modelle</option>
-      <option>Ford Transit</option>
-      <option>Ford Transit Courier</option>
-      <option>Ford Transit Custom</option>
-      <option>Ford Puma</option>
-      <option>Ford Kuga</option>
-      <option>Ford Capri</option>
-      <option>Ford Ranger</option>
-      <option>Ford Ranger Wildtrak</option>
-      <option>Ford Focus</option>
+
+      <option value="">
+        Alle Modelle
+      </option>
+
+      <option value="Ford Puma">
+        Ford Puma
+      </option>
+
+      <option value="Ford Transit">
+        Ford Transit
+      </option>
+
+      <option value="Transporter">
+        Transporter
+      </option>
+
+      <option value="Ford Ranger">
+        Ford Ranger
+      </option>
+
+      <option value="Ford Kuga">
+        Ford Kuga
+      </option>
+
+      <option value="Ford Capri">
+        Ford Capri
+      </option>
+
     </select>
 
     <select id="colorFilter">
-      <option value="">Alle Farben</option>
+
+      <option value="">
+        Alle Farben
+      </option>
+
       <option value="White">Weiß</option>
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
@@ -419,6 +580,7 @@
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
       <option value="Silver">Silber</option>
+
     </select>
 
     <button
@@ -457,48 +619,92 @@
 </main>
 
 
+<!-- =========================
+     ADD
+========================= -->
+
 <div id="addPanel">
 
-  <h2>Fahrzeug hinzufügen</h2>
+  <h2>
+    Fahrzeug hinzufügen
+  </h2>
+
 
   <div class="formRow">
-    <label for="newVin">VIN</label>
+
+    <label for="newVin">
+      VIN
+    </label>
+
     <input
       id="newVin"
       type="text"
-      placeholder="z.B. 12345"
+      placeholder="z.B. 02236"
     >
+
   </div>
 
+
   <div class="formRow">
-    <label for="newFahrnummer">Fahrnummer</label>
+
+    <label for="newFahrnummer">
+      Fahrzeugnummer
+    </label>
+
     <input
       id="newFahrnummer"
       type="text"
-      placeholder="z.B. 999"
+      placeholder="z.B. TZ-B504"
     >
+
   </div>
 
+
   <div class="formRow">
-    <label for="newModel">Modell</label>
+
+    <label for="newModel">
+      Modell
+    </label>
 
     <select id="newModel">
-      <option>Ford Transit</option>
-      <option>Ford Transit Courier</option>
-      <option>Ford Transit Custom</option>
-      <option>Ford Puma</option>
-      <option>Ford Kuga</option>
-      <option>Ford Capri</option>
-      <option>Ford Ranger</option>
-      <option>Ford Ranger Wildtrak</option>
-      <option>Ford Focus</option>
+
+      <option value="Ford Puma">
+        Ford Puma
+      </option>
+
+      <option value="Ford Transit">
+        Ford Transit
+      </option>
+
+      <option value="Transporter">
+        Transporter
+      </option>
+
+      <option value="Ford Ranger">
+        Ford Ranger
+      </option>
+
+      <option value="Ford Kuga">
+        Ford Kuga
+      </option>
+
+      <option value="Ford Capri">
+        Ford Capri
+      </option>
+
     </select>
+
   </div>
 
+
   <div class="formRow">
-    <label for="newColor">Farbe</label>
+
+    <label for="newColor">
+      Farbe
+    </label>
 
     <select id="newColor">
+
       <option value="White">Weiß</option>
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
@@ -507,18 +713,26 @@
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
       <option value="Silver">Silber</option>
+
     </select>
+
   </div>
 
+
   <div class="formRow">
-    <label for="newMobileUrl">Mobile.de URL</label>
+
+    <label for="newMobileUrl">
+      Mobile.de URL
+    </label>
 
     <input
       id="newMobileUrl"
       type="url"
       placeholder="https://..."
     >
+
   </div>
+
 
   <div class="panelActions">
 
@@ -541,6 +755,10 @@
 </div>
 
 
+<!-- =========================
+     EDIT
+========================= -->
+
 <div id="card">
 
   <button
@@ -550,38 +768,85 @@
     ×
   </button>
 
-  <h2 id="cardTitle">Fahrzeug</h2>
 
-  <div class="row">
-    <strong>VIN:</strong>
-    <span id="cardVin"></span>
-  </div>
+  <h2 id="cardTitle">
+    Fahrzeug bearbeiten
+  </h2>
 
-  <div class="row">
-    <strong>Fahrnummer:</strong>
-    <span id="cardFahrnummer"></span>
-  </div>
 
   <div class="formRow">
-    <label for="editModel">Modell</label>
+
+    <label for="editVin">
+      VIN
+    </label>
+
+    <input
+      id="editVin"
+      type="text"
+    >
+
+  </div>
+
+
+  <div class="formRow">
+
+    <label for="editFahrnummer">
+      Fahrzeugnummer
+    </label>
+
+    <input
+      id="editFahrnummer"
+      type="text"
+    >
+
+  </div>
+
+
+  <div class="formRow">
+
+    <label for="editModel">
+      Modell
+    </label>
 
     <select id="editModel">
-      <option>Ford Transit</option>
-      <option>Ford Transit Courier</option>
-      <option>Ford Transit Custom</option>
-      <option>Ford Puma</option>
-      <option>Ford Kuga</option>
-      <option>Ford Capri</option>
-      <option>Ford Ranger</option>
-      <option>Ford Ranger Wildtrak</option>
-      <option>Ford Focus</option>
+
+      <option value="Ford Puma">
+        Ford Puma
+      </option>
+
+      <option value="Ford Transit">
+        Ford Transit
+      </option>
+
+      <option value="Transporter">
+        Transporter
+      </option>
+
+      <option value="Ford Ranger">
+        Ford Ranger
+      </option>
+
+      <option value="Ford Kuga">
+        Ford Kuga
+      </option>
+
+      <option value="Ford Capri">
+        Ford Capri
+      </option>
+
     </select>
+
   </div>
 
+
   <div class="formRow">
-    <label for="editColor">Farbe</label>
+
+    <label for="editColor">
+      Farbe
+    </label>
 
     <select id="editColor">
+
       <option value="White">Weiß</option>
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
@@ -590,8 +855,26 @@
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
       <option value="Silver">Silber</option>
+
     </select>
+
   </div>
+
+
+  <div class="formRow">
+
+    <label for="editMobileUrl">
+      Mobile.de URL
+    </label>
+
+    <input
+      id="editMobileUrl"
+      type="url"
+      placeholder="https://..."
+    >
+
+  </div>
+
 
   <button
     id="saveCarButton"
@@ -599,6 +882,7 @@
   >
     Änderungen speichern
   </button>
+
 
   <a
     id="mobileButton"
@@ -608,6 +892,7 @@
   >
     Mobile.de öffnen
   </a>
+
 
   <button
     id="deleteCarButton"
@@ -621,8 +906,13 @@
 
 <script>
 
+/* =========================
+   SUPABASE
+========================= */
+
 const SUPABASE_URL =
   "https://cydestwofhdfsmekwxho.supabase.co";
+
 
 const SUPABASE_KEY =
   "sb_publishable_LNyn0n-rbQfu5AIMeAt9XQ_zqSpQ3Dh";
@@ -634,10 +924,14 @@ let placementMode = false;
 
 let pendingCar = null;
 
-let dragged = false;
-
 let selectedCar = null;
 
+let dragged = false;
+
+
+/* =========================
+   ELEMENTS
+========================= */
 
 const markers =
   document.getElementById("markers");
@@ -660,25 +954,51 @@ const status =
 const addPanel =
   document.getElementById("addPanel");
 
+const card =
+  document.getElementById("card");
+
 const placementMessage =
   document.getElementById("placementMessage");
 
 
-async function apiRequest(path, options = {}) {
+/* =========================
+   API
+========================= */
+
+async function apiRequest(
+  path,
+  options = {}
+) {
 
   const response =
     await fetch(
-      SUPABASE_URL + "/rest/v1/" + path,
+
+      SUPABASE_URL +
+      "/rest/v1/" +
+      path,
+
       {
+
         ...options,
 
         headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: "Bearer " + SUPABASE_KEY,
-          "Content-Type": "application/json",
+
+          apikey:
+            SUPABASE_KEY,
+
+          Authorization:
+            "Bearer " +
+            SUPABASE_KEY,
+
+          "Content-Type":
+            "application/json",
+
           ...(options.headers || {})
+
         }
+
       }
+
     );
 
 
@@ -695,6 +1015,10 @@ async function apiRequest(path, options = {}) {
 }
 
 
+/* =========================
+   LOAD
+========================= */
+
 async function loadCars() {
 
   try {
@@ -704,8 +1028,10 @@ async function loadCars() {
         "cars?select=*&order=id.asc"
       );
 
+
     cars =
       await response.json();
+
 
     renderCars();
 
@@ -723,10 +1049,15 @@ async function loadCars() {
 }
 
 
+/* =========================
+   COLOR
+========================= */
+
 function getCarColor(color) {
 
   const c =
-    (color || "").toLowerCase();
+    (color || "")
+      .toLowerCase();
 
 
   if (
@@ -753,7 +1084,9 @@ function getCarColor(color) {
   }
 
 
-  if (c.includes("orange")) {
+  if (
+    c.includes("orange")
+  ) {
     return "#f97316";
   }
 
@@ -787,33 +1120,74 @@ function getCarColor(color) {
     c.includes("silver") ||
     c.includes("silber")
   ) {
-    return "#c0c0c0";
+    return "#cbd5e1";
   }
 
 
-  return "#6b7280";
+  return "#ffffff";
 }
 
+
+/* =========================
+   MODEL TYPE
+========================= */
 
 function getVehicleType(model) {
 
   const m =
-    (model || "").toLowerCase();
+    (model || "")
+      .toLowerCase();
 
 
-  if (m.includes("ranger")) {
-    return "pickup";
+  if (
+    m.includes("puma")
+  ) {
+    return "puma";
   }
 
 
-  if (m.includes("transit")) {
-    return "van";
+  if (
+    m.includes("transporter")
+  ) {
+    return "transporter";
   }
 
 
-  return "car";
+  if (
+    m.includes("transit")
+  ) {
+    return "transit";
+  }
+
+
+  if (
+    m.includes("ranger")
+  ) {
+    return "ranger";
+  }
+
+
+  if (
+    m.includes("kuga")
+  ) {
+    return "kuga";
+  }
+
+
+  if (
+    m.includes("capri")
+  ) {
+    return "capri";
+  }
+
+
+  return "puma";
 }
 
+
+/* =========================
+   FILTER
+========================= */
 
 function carMatches(car) {
 
@@ -823,14 +1197,16 @@ function carMatches(car) {
       .toLowerCase();
 
 
-  const searchText =
-    `${car.vin5 || ""} ${car.fahrnummer || ""}`
+  const text =
+    `${car.vin5 || ""}
+     ${car.fahrnummer || ""}
+     ${car.model || ""}`
       .toLowerCase();
 
 
   if (
     q &&
-    !searchText.includes(q)
+    !text.includes(q)
   ) {
     return false;
   }
@@ -838,7 +1214,8 @@ function carMatches(car) {
 
   if (
     modelFilter.value &&
-    car.model !== modelFilter.value
+    car.model !==
+      modelFilter.value
   ) {
     return false;
   }
@@ -846,7 +1223,8 @@ function carMatches(car) {
 
   if (
     colorFilter.value &&
-    car.color !== colorFilter.value
+    car.color !==
+      colorFilter.value
   ) {
     return false;
   }
@@ -856,6 +1234,10 @@ function carMatches(car) {
 }
 
 
+/* =========================
+   CAR GRAPHIC
+========================= */
+
 function createCarGraphic(car) {
 
   const shape =
@@ -864,7 +1246,9 @@ function createCarGraphic(car) {
 
   shape.className =
     "carShape " +
-    getVehicleType(car.model);
+    getVehicleType(
+      car.model
+    );
 
 
   shape.style.setProperty(
@@ -884,7 +1268,7 @@ function createCarGraphic(car) {
     document.createElement("div");
 
   roof.className =
-    "carRoof";
+    "roof";
 
 
   const rearWindow =
@@ -936,117 +1320,190 @@ function createCarGraphic(car) {
     "headlight right";
 
 
-  shape.appendChild(frontWindow);
-  shape.appendChild(roof);
-  shape.appendChild(rearWindow);
-  shape.appendChild(wheelFL);
-  shape.appendChild(wheelFR);
-  shape.appendChild(wheelRL);
-  shape.appendChild(wheelRR);
-  shape.appendChild(lightLeft);
-  shape.appendChild(lightRight);
+  shape.appendChild(
+    frontWindow
+  );
+
+  shape.appendChild(
+    roof
+  );
+
+  shape.appendChild(
+    rearWindow
+  );
+
+  shape.appendChild(
+    wheelFL
+  );
+
+  shape.appendChild(
+    wheelFR
+  );
+
+  shape.appendChild(
+    wheelRL
+  );
+
+  shape.appendChild(
+    wheelRR
+  );
+
+  shape.appendChild(
+    lightLeft
+  );
+
+  shape.appendChild(
+    lightRight
+  );
 
 
   return shape;
 }
 
 
+/* =========================
+   RENDER
+========================= */
+
 function renderCars() {
 
   markers.innerHTML = "";
 
+
   let visibleCount = 0;
 
 
-  cars.forEach(car => {
+  cars.forEach(
+    car => {
 
 
-    if (
-      car.position_x == null ||
-      car.position_y == null
-    ) {
-      return;
-    }
+      if (
+        car.position_x == null ||
+        car.position_y == null
+      ) {
+        return;
+      }
 
 
-    const marker =
-      document.createElement("button");
+      const marker =
+        document.createElement(
+          "button"
+        );
 
 
-    marker.type = "button";
-
-    marker.className = "marker";
-
-    marker.style.left =
-      car.position_x + "%";
-
-    marker.style.top =
-      car.position_y + "%";
+      marker.type =
+        "button";
 
 
-    const carGraphic =
-      createCarGraphic(car);
-
-    marker.appendChild(carGraphic);
+      marker.className =
+        "marker";
 
 
-    const vinLabel =
-      document.createElement("span");
-
-    vinLabel.className =
-      "carVin";
-
-    vinLabel.textContent =
-      car.vin5 || "?";
-
-    marker.appendChild(vinLabel);
+      marker.style.left =
+        car.position_x + "%";
 
 
-    if (!carMatches(car)) {
-
-      marker.classList.add("hidden");
-
-    }
-
-    else {
-
-      visibleCount++;
-
-    }
+      marker.style.top =
+        car.position_y + "%";
 
 
-    enableDrag(marker, car);
+      const graphic =
+        createCarGraphic(car);
 
 
-    marker.addEventListener(
-      "click",
-      () => {
+      marker.appendChild(
+        graphic
+      );
 
-        if (!dragged) {
-          showCar(car);
-        }
+
+      const vin =
+        document.createElement(
+          "span"
+        );
+
+
+      vin.className =
+        "carVin";
+
+
+      vin.textContent =
+        car.vin5 || "?";
+
+
+      marker.appendChild(
+        vin
+      );
+
+
+      if (
+        !carMatches(car)
+      ) {
+
+        marker.classList.add(
+          "hidden"
+        );
 
       }
-    );
+
+      else {
+
+        visibleCount++;
+
+      }
 
 
-    markers.appendChild(marker);
+      enableDrag(
+        marker,
+        car
+      );
 
-  });
+
+      marker.addEventListener(
+        "click",
+        () => {
+
+          if (!dragged) {
+
+            showCar(car);
+
+          }
+
+        }
+      );
+
+
+      markers.appendChild(
+        marker
+      );
+
+    }
+  );
 
 
   status.textContent =
     visibleCount +
     " Fahrzeug" +
-    (visibleCount === 1 ? "" : "e") +
+    (
+      visibleCount === 1
+        ? ""
+        : "e"
+    ) +
     " angezeigt";
 
 }
 
 
-function enableDrag(marker, car) {
+/* =========================
+   DRAG
+========================= */
+
+function enableDrag(
+  marker,
+  car
+) {
 
   let startX = 0;
+
   let startY = 0;
 
 
@@ -1054,17 +1511,23 @@ function enableDrag(marker, car) {
     "pointerdown",
     event => {
 
+
       if (placementMode) {
         return;
       }
 
-      dragged = false;
+
+      dragged =
+        false;
+
 
       startX =
         event.clientX;
 
+
       startY =
         event.clientY;
+
 
       marker.setPointerCapture(
         event.pointerId
@@ -1078,6 +1541,7 @@ function enableDrag(marker, car) {
     "pointermove",
     event => {
 
+
       if (
         !marker.hasPointerCapture(
           event.pointerId
@@ -1089,12 +1553,17 @@ function enableDrag(marker, car) {
 
       const distance =
         Math.hypot(
-          event.clientX - startX,
-          event.clientY - startY
+          event.clientX -
+          startX,
+
+          event.clientY -
+          startY
         );
 
 
-      if (distance > 4) {
+      if (
+        distance > 4
+      ) {
         dragged = true;
       }
 
@@ -1114,6 +1583,7 @@ function enableDrag(marker, car) {
       marker.style.left =
         pos.x + "%";
 
+
       marker.style.top =
         pos.y + "%";
 
@@ -1124,6 +1594,7 @@ function enableDrag(marker, car) {
   marker.addEventListener(
     "pointerup",
     async event => {
+
 
       if (
         !marker.hasPointerCapture(
@@ -1160,22 +1631,38 @@ function enableDrag(marker, car) {
         await apiRequest(
           `cars?id=eq.${car.id}`,
           {
-            method: "PATCH",
+
+            method:
+              "PATCH",
 
             headers: {
-              Prefer: "return=minimal"
+
+              Prefer:
+                "return=minimal"
+
             },
 
-            body: JSON.stringify({
-              position_x: pos.x,
-              position_y: pos.y
-            })
+            body:
+              JSON.stringify({
+
+                position_x:
+                  pos.x,
+
+                position_y:
+                  pos.y
+
+              })
+
           }
         );
 
 
-        car.position_x = pos.x;
-        car.position_y = pos.y;
+        car.position_x =
+          pos.x;
+
+
+        car.position_y =
+          pos.y;
 
 
         status.textContent =
@@ -1184,7 +1671,7 @@ function enableDrag(marker, car) {
 
         setTimeout(
           renderCars,
-          300
+          250
         );
 
       }
@@ -1207,111 +1694,208 @@ function enableDrag(marker, car) {
 }
 
 
+/* =========================
+   MAP POSITION
+========================= */
+
 function getMapPercent(
   clientX,
   clientY
 ) {
 
   const rect =
-    mapWrapper.getBoundingClientRect();
+    mapWrapper
+      .getBoundingClientRect();
 
 
   let x =
-    ((clientX - rect.left) / rect.width) * 100;
+    (
+      (
+        clientX -
+        rect.left
+      )
+      /
+      rect.width
+    )
+    *
+    100;
 
 
   let y =
-    ((clientY - rect.top) / rect.height) * 100;
+    (
+      (
+        clientY -
+        rect.top
+      )
+      /
+      rect.height
+    )
+    *
+    100;
 
 
   x =
     Math.max(
       0,
-      Math.min(100, x)
+      Math.min(
+        100,
+        x
+      )
     );
 
 
   y =
     Math.max(
       0,
-      Math.min(100, y)
+      Math.min(
+        100,
+        y
+      )
     );
 
 
   return {
-    x: Number(x.toFixed(2)),
-    y: Number(y.toFixed(2))
+
+    x:
+      Number(
+        x.toFixed(2)
+      ),
+
+    y:
+      Number(
+        y.toFixed(2)
+      )
+
   };
 
 }
 
 
+/* =========================
+   OPEN EDIT
+========================= */
+
 function showCar(car) {
 
-  selectedCar = car;
+  selectedCar =
+    car;
 
 
   document.getElementById(
     "cardTitle"
   ).textContent =
-    car.model || "Fahrzeug";
+    car.model ||
+    "Fahrzeug bearbeiten";
 
 
   document.getElementById(
-    "cardVin"
-  ).textContent =
-    car.vin5 || "-";
-
-
-  document.getElementById(
-    "cardFahrnummer"
-  ).textContent =
-    car.fahrnummer || "-";
-
-
-  document.getElementById(
-    "editModel"
+    "editVin"
   ).value =
-    car.model || "Ford Transit";
+    car.vin5 || "";
 
 
   document.getElementById(
-    "editColor"
+    "editFahrnummer"
   ).value =
-    car.color || "White";
+    car.fahrnummer || "";
 
 
-  const mobileButton =
+  setSelectValue(
+    document.getElementById(
+      "editModel"
+    ),
+    car.model
+  );
+
+
+  setSelectValue(
+    document.getElementById(
+      "editColor"
+    ),
+    car.color
+  );
+
+
+  document.getElementById(
+    "editMobileUrl"
+  ).value =
+    car.mobile_url || "";
+
+
+  updateMobileButton(
+    car.mobile_url
+  );
+
+
+  card.style.display =
+    "block";
+
+}
+
+
+/* =========================
+   SELECT VALUE
+========================= */
+
+function setSelectValue(
+  select,
+  value
+) {
+
+  const exists =
+    Array
+      .from(select.options)
+      .some(
+        option =>
+          option.value === value
+      );
+
+
+  if (exists) {
+
+    select.value =
+      value;
+
+  }
+
+}
+
+
+/* =========================
+   MOBILE BUTTON
+========================= */
+
+function updateMobileButton(url) {
+
+  const button =
     document.getElementById(
       "mobileButton"
     );
 
 
-  if (car.mobile_url) {
+  if (url) {
 
-    mobileButton.href =
-      car.mobile_url;
+    button.href =
+      url;
 
-    mobileButton.style.display =
+    button.style.display =
       "block";
 
   }
 
   else {
 
-    mobileButton.style.display =
+    button.style.display =
       "none";
 
   }
 
-
-  document.getElementById(
-    "card"
-  ).style.display =
-    "block";
-
 }
 
+
+/* =========================
+   SAVE EDIT
+========================= */
 
 document.getElementById(
   "saveCarButton"
@@ -1319,21 +1903,60 @@ document.getElementById(
   "click",
   async () => {
 
+
     if (!selectedCar) {
       return;
     }
 
 
-    const newModel =
+    const vin =
+      document.getElementById(
+        "editVin"
+      )
+      .value
+      .trim();
+
+
+    const fahrnummer =
+      document.getElementById(
+        "editFahrnummer"
+      )
+      .value
+      .trim();
+
+
+    const model =
       document.getElementById(
         "editModel"
       ).value;
 
 
-    const newColor =
+    const color =
       document.getElementById(
         "editColor"
       ).value;
+
+
+    const mobileUrl =
+      document.getElementById(
+        "editMobileUrl"
+      )
+      .value
+      .trim();
+
+
+    if (
+      !vin ||
+      !fahrnummer
+    ) {
+
+      alert(
+        "Bitte VIN und Fahrzeugnummer eingeben."
+      );
+
+      return;
+
+    }
 
 
     try {
@@ -1345,31 +1968,70 @@ document.getElementById(
       await apiRequest(
         `cars?id=eq.${selectedCar.id}`,
         {
-          method: "PATCH",
+
+          method:
+            "PATCH",
 
           headers: {
-            Prefer: "return=minimal"
+
+            Prefer:
+              "return=minimal"
+
           },
 
-          body: JSON.stringify({
-            model: newModel,
-            color: newColor
-          })
+          body:
+            JSON.stringify({
+
+              vin5:
+                vin,
+
+              fahrnummer:
+                fahrnummer,
+
+              model:
+                model,
+
+              color:
+                color,
+
+              mobile_url:
+                mobileUrl
+
+            })
+
         }
       );
 
 
+      selectedCar.vin5 =
+        vin;
+
+
+      selectedCar.fahrnummer =
+        fahrnummer;
+
+
       selectedCar.model =
-        newModel;
+        model;
+
 
       selectedCar.color =
-        newColor;
+        color;
+
+
+      selectedCar.mobile_url =
+        mobileUrl;
 
 
       document.getElementById(
         "cardTitle"
       ).textContent =
-        newModel;
+        model;
+
+
+      updateMobileButton(
+        mobileUrl
+      );
 
 
       renderCars();
@@ -1384,6 +2046,7 @@ document.getElementById(
 
       console.error(error);
 
+
       alert(
         "Änderungen konnten nicht gespeichert werden."
       );
@@ -1394,24 +2057,25 @@ document.getElementById(
 );
 
 
+/* =========================
+   DELETE
+========================= */
+
 document.getElementById(
   "deleteCarButton"
 ).addEventListener(
   "click",
   async () => {
 
+
     if (!selectedCar) {
       return;
     }
 
 
-    const vin =
-      selectedCar.vin5 || "";
-
-
     const confirmed =
       confirm(
-        `Fahrzeug ${vin} wirklich löschen?`
+        `Fahrzeug ${selectedCar.vin5 || ""} wirklich löschen?`
       );
 
 
@@ -1426,14 +2090,24 @@ document.getElementById(
         "Fahrzeug wird gelöscht...";
 
 
+      const id =
+        selectedCar.id;
+
+
       await apiRequest(
-        `cars?id=eq.${selectedCar.id}`,
+        `cars?id=eq.${id}`,
         {
-          method: "DELETE",
+
+          method:
+            "DELETE",
 
           headers: {
-            Prefer: "return=minimal"
+
+            Prefer:
+              "return=minimal"
+
           }
+
         }
       );
 
@@ -1441,16 +2115,15 @@ document.getElementById(
       cars =
         cars.filter(
           car =>
-            car.id !== selectedCar.id
+            car.id !== id
         );
 
 
-      selectedCar = null;
+      selectedCar =
+        null;
 
 
-      document.getElementById(
-        "card"
-      ).style.display =
+      card.style.display =
         "none";
 
 
@@ -1466,6 +2139,7 @@ document.getElementById(
 
       console.error(error);
 
+
       alert(
         "Fahrzeug konnte nicht gelöscht werden."
       );
@@ -1476,11 +2150,24 @@ document.getElementById(
 );
 
 
+/* =========================
+   ADD PANEL
+========================= */
+
 document.getElementById(
   "addCarButton"
 ).addEventListener(
   "click",
   () => {
+
+
+    card.style.display =
+      "none";
+
+
+    selectedCar =
+      null;
+
 
     addPanel.style.display =
       "block";
@@ -1489,20 +2176,28 @@ document.getElementById(
 );
 
 
+/* =========================
+   CANCEL ADD
+========================= */
+
 document.getElementById(
   "cancelAddButton"
 ).addEventListener(
   "click",
   () => {
 
+
     addPanel.style.display =
       "none";
+
 
     placementMode =
       false;
 
+
     pendingCar =
       null;
+
 
     placementMessage.style.display =
       "none";
@@ -1511,39 +2206,54 @@ document.getElementById(
 );
 
 
+/* =========================
+   START PLACEMENT
+========================= */
+
 document.getElementById(
   "placeCarButton"
 ).addEventListener(
   "click",
   () => {
 
+
     const vin =
       document.getElementById(
         "newVin"
-      ).value.trim();
+      )
+      .value
+      .trim();
 
 
     const fahrnummer =
       document.getElementById(
         "newFahrnummer"
-      ).value.trim();
+      )
+      .value
+      .trim();
 
 
-    if (!vin || !fahrnummer) {
+    if (
+      !vin ||
+      !fahrnummer
+    ) {
 
       alert(
-        "Bitte VIN und Fahrnummer eingeben."
+        "Bitte VIN und Fahrzeugnummer eingeben."
       );
 
       return;
+
     }
 
 
     pendingCar = {
 
-      vin5: vin,
+      vin5:
+        vin,
 
-      fahrnummer: fahrnummer,
+      fahrnummer:
+        fahrnummer,
 
       model:
         document.getElementById(
@@ -1558,7 +2268,9 @@ document.getElementById(
       mobile_url:
         document.getElementById(
           "newMobileUrl"
-        ).value.trim()
+        )
+        .value
+        .trim()
 
     };
 
@@ -1574,13 +2286,22 @@ document.getElementById(
     placementMessage.style.display =
       "block";
 
+
+    placementMessage.textContent =
+      "Klicke jetzt auf die gewünschte Position auf dem Parkplatz.";
+
   }
 );
 
 
+/* =========================
+   PLACE CAR
+========================= */
+
 mapWrapper.addEventListener(
   "click",
   async event => {
+
 
     if (!placementMode) {
       return;
@@ -1588,7 +2309,9 @@ mapWrapper.addEventListener(
 
 
     if (
-      event.target.closest(".marker")
+      event.target.closest(
+        ".marker"
+      )
     ) {
       return;
     }
@@ -1605,9 +2328,11 @@ mapWrapper.addEventListener(
 
       ...pendingCar,
 
-      position_x: pos.x,
+      position_x:
+        pos.x,
 
-      position_y: pos.y
+      position_y:
+        pos.y
 
     };
 
@@ -1622,14 +2347,22 @@ mapWrapper.addEventListener(
         await apiRequest(
           "cars",
           {
-            method: "POST",
+
+            method:
+              "POST",
 
             headers: {
-              Prefer: "return=representation"
+
+              Prefer:
+                "return=representation"
+
             },
 
             body:
-              JSON.stringify(newCar)
+              JSON.stringify(
+                newCar
+              )
+
           }
         );
 
@@ -1638,15 +2371,20 @@ mapWrapper.addEventListener(
         await response.json();
 
 
-      if (created[0]) {
+      if (
+        created[0]
+      ) {
 
-        cars.push(created[0]);
+        cars.push(
+          created[0]
+        );
 
       }
 
 
       placementMode =
         false;
+
 
       pendingCar =
         null;
@@ -1668,19 +2406,23 @@ mapWrapper.addEventListener(
       console.error(error);
 
 
-      placementMessage.textContent =
-        "Fehler beim Speichern.";
-
-
       alert(
         "Fahrzeug konnte nicht gespeichert werden."
       );
+
+
+      placementMessage.textContent =
+        "Fehler beim Speichern.";
 
     }
 
   }
 );
 
+
+/* =========================
+   CLEAR FORM
+========================= */
 
 function clearAddForm() {
 
@@ -1701,22 +2443,31 @@ function clearAddForm() {
 }
 
 
+/* =========================
+   CLOSE CARD
+========================= */
+
 document.getElementById(
   "closeCard"
 ).addEventListener(
   "click",
   () => {
 
-    selectedCar = null;
 
-    document.getElementById(
-      "card"
-    ).style.display =
+    selectedCar =
+      null;
+
+
+    card.style.display =
       "none";
 
   }
 );
 
+
+/* =========================
+   FILTER EVENTS
+========================= */
 
 search.addEventListener(
   "input",
@@ -1735,6 +2486,10 @@ colorFilter.addEventListener(
   renderCars
 );
 
+
+/* =========================
+   START
+========================= */
 
 loadCars();
 
