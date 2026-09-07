@@ -254,63 +254,80 @@
        MODEL SHAPES
     ========================= */
 
-    /* PUMA */
+    /* PUMA - kompakter Crossover */
     .carShape.puma {
-      width: 22px;
-      height: 34px;
-      border-radius: 8px 8px 5px 5px;
+      width: 21px;
+      height: 33px;
+      border-radius: 8px 8px 6px 6px;
     }
 
-    /* TRANSIT */
+    .carShape.puma .roof {
+      left: 5px;
+      right: 5px;
+    }
+
+    /* TRANSIT - langer Transporter */
     .carShape.transit {
-      width: 23px;
-      height: 42px;
+      width: 22px;
+      height: 41px;
       border-radius: 4px;
+    }
+
+    .carShape.transit .frontWindow {
+      top: 4px;
+      height: 8px;
     }
 
     .carShape.transit .rearWindow {
       bottom: 4px;
+      height: 7px;
     }
 
-    /* TRANSPORTER */
+    /* TRANSPORTER - breiter Kastenwagen */
     .carShape.transporter {
       width: 24px;
-      height: 40px;
+      height: 39px;
       border-radius: 3px;
     }
 
     .carShape.transporter .roof {
       left: 3px;
       right: 3px;
+      border-radius: 1px;
     }
 
-    /* RANGER */
+    .carShape.transporter::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      top: 16px;
+      border-top: 1px solid rgba(0,0,0,.25);
+    }
+
+    /* RANGER - Pickup mit Ladefläche */
     .carShape.ranger {
       width: 24px;
-      height: 39px;
+      height: 38px;
       border-radius: 5px;
     }
 
     .carShape.ranger::after {
       content: "";
       position: absolute;
-
       left: 3px;
       right: 3px;
       bottom: 3px;
-
       height: 10px;
-
-      border: 1px solid rgba(0,0,0,.5);
+      border: 1px solid rgba(0,0,0,.55);
       border-radius: 1px;
-
       background:
         repeating-linear-gradient(
           90deg,
           transparent,
           transparent 2px,
-          rgba(0,0,0,.15) 2px,
-          rgba(0,0,0,.15) 3px
+          rgba(0,0,0,.16) 2px,
+          rgba(0,0,0,.16) 3px
         );
     }
 
@@ -318,18 +335,74 @@
       display: none;
     }
 
-    /* KUGA */
-    .carShape.kuga {
-      width: 24px;
-      height: 36px;
-      border-radius: 7px;
+    .carShape.ranger .roof {
+      bottom: 15px;
     }
 
-    /* CAPRI */
+    /* KUGA - SUV */
+    .carShape.kuga {
+      width: 24px;
+      height: 35px;
+      border-radius: 7px 7px 5px 5px;
+    }
+
+    .carShape.kuga .roof {
+      left: 4px;
+      right: 4px;
+    }
+
+    /* CAPRI - sportlicher, schmaler */
     .carShape.capri {
+      width: 20px;
+      height: 34px;
+      border-radius: 10px 10px 5px 5px;
+    }
+
+    .carShape.capri .frontWindow {
+      left: 4px;
+      right: 4px;
+    }
+
+    /* FOCUS - klassischer Pkw */
+    .carShape.focus {
+      width: 21px;
+      height: 34px;
+      border-radius: 6px;
+    }
+
+    .carShape.focus .roof {
+      left: 5px;
+      right: 5px;
+      border-radius: 3px;
+    }
+
+    /* OPEL - rundlicher Pkw */
+    .carShape.opel {
+      width: 22px;
+      height: 34px;
+      border-radius: 9px 9px 6px 6px;
+    }
+
+    .carShape.opel::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      right: 7px;
+      top: 16px;
+      border-top: 2px solid rgba(0,0,0,.28);
+    }
+
+    /* SKODA - kantiger Pkw */
+    .carShape.skoda {
       width: 22px;
       height: 35px;
-      border-radius: 9px 9px 5px 5px;
+      border-radius: 4px 4px 6px 6px;
+    }
+
+    .carShape.skoda .rearWindow {
+      left: 3px;
+      right: 3px;
+      height: 7px;
     }
 
     .carVin {
@@ -702,6 +775,18 @@
         Ford Capri
       </option>
 
+      <option value="Ford Focus">
+        Ford Focus
+      </option>
+
+      <option value="Opel">
+        Opel
+      </option>
+
+      <option value="Škoda">
+        Škoda
+      </option>
+
     </select>
 
   </div>
@@ -842,6 +927,18 @@
 
       <option value="Ford Capri">
         Ford Capri
+      </option>
+
+      <option value="Ford Focus">
+        Ford Focus
+      </option>
+
+      <option value="Opel">
+        Opel
+      </option>
+
+      <option value="Škoda">
+        Škoda
       </option>
 
     </select>
@@ -1191,7 +1288,29 @@ function getVehicleType(model) {
   }
 
 
-  return "puma";
+  if (
+    m.includes("focus")
+  ) {
+    return "focus";
+  }
+
+
+  if (
+    m.includes("opel")
+  ) {
+    return "opel";
+  }
+
+
+  if (
+    m.includes("škoda") ||
+    m.includes("skoda")
+  ) {
+    return "skoda";
+  }
+
+
+  return "focus";
 }
 
 
