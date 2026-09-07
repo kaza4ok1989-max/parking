@@ -1692,8 +1692,6 @@ function enableDrag(
   );
 
 }
-
-
 /* =========================
    MAP POSITION
 ========================= */
@@ -1703,9 +1701,13 @@ function getMapPercent(
   clientY
 ) {
 
+  const image =
+    document.getElementById(
+      "parkingImage"
+    );
+
   const rect =
-    mapWrapper
-      .getBoundingClientRect();
+    image.getBoundingClientRect();
 
 
   let x =
@@ -1758,17 +1760,19 @@ function getMapPercent(
 
     x:
       Number(
-        x.toFixed(2)
+        x.toFixed(4)
       ),
 
     y:
       Number(
-        y.toFixed(2)
+        y.toFixed(4)
       )
 
   };
 
 }
+
+
 
 
 /* =========================
