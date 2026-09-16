@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Parking · Fahrzeugkarte</title>
-
   <style>
     * { box-sizing: border-box; }
 
@@ -43,7 +42,6 @@
     }
 
     input { min-width: 150px; }
-
     button { cursor: pointer; }
 
     #search {
@@ -126,8 +124,6 @@
       pointer-events: none;
     }
 
-    /* Машинка: точка координат находится в центре кузова,
-       а подпись VIN не сдвигает эту точку. */
     .marker {
       position: absolute;
       width: 36px;
@@ -144,13 +140,8 @@
       overflow: visible;
     }
 
-    .marker.admin {
-      cursor: grab;
-    }
-
-    .marker.admin:active {
-      cursor: grabbing;
-    }
+    .marker.admin { cursor: grab; }
+    .marker.admin:active { cursor: grabbing; }
 
     .marker.hidden {
       opacity: 0.12;
@@ -224,7 +215,6 @@
     .headlight.left { left: 3px; }
     .headlight.right { right: 3px; }
 
-    /* Разные формы автомобилей */
     .carShape.puma {
       width: 21px;
       height: 33px;
@@ -248,21 +238,30 @@
       right: 3px;
     }
 
-    .carShape.ranger {
+    .carShape.ranger,
+    .carShape.f150 {
       width: 24px;
       height: 38px;
       border-radius: 5px;
     }
 
-    .carShape.ranger .rearWindow {
+    .carShape.f150 {
+      width: 26px;
+      height: 42px;
+    }
+
+    .carShape.ranger .rearWindow,
+    .carShape.f150 .rearWindow {
       display: none;
     }
 
-    .carShape.ranger .roof {
+    .carShape.ranger .roof,
+    .carShape.f150 .roof {
       bottom: 15px;
     }
 
-    .carShape.ranger::after {
+    .carShape.ranger::after,
+    .carShape.f150::after {
       content: "";
       position: absolute;
       left: 3px;
@@ -275,6 +274,10 @@
         transparent 0 2px,
         rgba(0,0,0,.16) 2px 3px
       );
+    }
+
+    .carShape.f150::after {
+      height: 13px;
     }
 
     .carShape.kuga {
@@ -326,7 +329,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,.3);
     }
 
-    /* Окна */
     .panel {
       display: none;
       position: fixed;
@@ -343,13 +345,8 @@
       z-index: 30;
     }
 
-    #addPanel, #loginPanel {
-      top: 70px;
-    }
-
-    #card {
-      bottom: 18px;
-    }
+    #addPanel, #loginPanel { top: 70px; }
+    #card { bottom: 18px; }
 
     .panel h2 {
       margin: 0 0 14px;
@@ -377,9 +374,7 @@
       margin-top: 14px;
     }
 
-    .panelActions button {
-      flex: 1;
-    }
+    .panelActions button { flex: 1; }
 
     .primaryButton {
       background: #2563eb;
@@ -450,6 +445,7 @@
       <option value="Ford Transit">Ford Transit</option>
       <option value="Transporter">Transporter</option>
       <option value="Ford Ranger">Ford Ranger</option>
+      <option value="Ford F-150">Ford F-150</option>
       <option value="Ford Kuga">Ford Kuga</option>
       <option value="Ford Capri">Ford Capri</option>
       <option value="Ford Focus">Ford Focus</option>
@@ -463,6 +459,7 @@
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
       <option value="Orange">Orange</option>
+      <option value="Yellow">Gelb</option>
       <option value="Green">Grün</option>
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
@@ -555,6 +552,7 @@
       <option value="Ford Transit">Ford Transit</option>
       <option value="Transporter">Transporter</option>
       <option value="Ford Ranger">Ford Ranger</option>
+      <option value="Ford F-150">Ford F-150</option>
       <option value="Ford Kuga">Ford Kuga</option>
       <option value="Ford Capri">Ford Capri</option>
       <option value="Ford Focus">Ford Focus</option>
@@ -570,6 +568,7 @@
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
       <option value="Orange">Orange</option>
+      <option value="Yellow">Gelb</option>
       <option value="Green">Grün</option>
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
@@ -590,7 +589,7 @@
   </div>
 </div>
 
-<!-- РЕДАКТИРОВАНИЕ -->
+<!-- КАРТОЧКА МАШИНЫ -->
 <div id="card" class="panel">
   <button id="closeCard" class="closeButton" type="button">×</button>
   <h2 id="cardTitle">Fahrzeug</h2>
@@ -612,6 +611,7 @@
       <option value="Ford Transit">Ford Transit</option>
       <option value="Transporter">Transporter</option>
       <option value="Ford Ranger">Ford Ranger</option>
+      <option value="Ford F-150">Ford F-150</option>
       <option value="Ford Kuga">Ford Kuga</option>
       <option value="Ford Capri">Ford Capri</option>
       <option value="Ford Focus">Ford Focus</option>
@@ -627,6 +627,7 @@
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
       <option value="Orange">Orange</option>
+      <option value="Yellow">Gelb</option>
       <option value="Green">Grün</option>
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
@@ -666,14 +667,20 @@
 </div>
 
 <script>
-  /* SUPABASE */
+  /* НАСТРОЙКИ SUPABASE */
   const SUPABASE_URL =
     "https://cydestwofhdfsmekwxho.supabase.co";
 
   const SUPABASE_KEY =
     "sb_publishable_LNyn0n-rbQfu5AIMeAt9XQ_zqSpQ3Dh";
 
+  const ADMIN_UID =
+    "07738029-db6f-482c-89e5-b97a51849e5d";
+
   const SESSION_KEY = "parking_admin_session";
+
+  /* Автообновление каждые 3 секунды */
+  const AUTO_REFRESH_MS = 3000;
 
   let cars = [];
   let session = null;
@@ -681,6 +688,10 @@
   let pendingCar = null;
   let placementMode = false;
   let dragging = false;
+  let dragInProgress = false;
+  let savingInProgress = false;
+  let refreshInProgress = false;
+  let lastCarsSnapshot = "";
 
   const $ = id => document.getElementById(id);
 
@@ -692,7 +703,10 @@
   const loginPanel = $("loginPanel");
 
   function isAdmin() {
-    return Boolean(session && session.access_token);
+    return Boolean(
+      session?.access_token &&
+      session?.user?.id === ADMIN_UID
+    );
   }
 
   function setStatus(message) {
@@ -708,13 +722,17 @@
   function updateAdminUI() {
     const admin = isAdmin();
 
-    $("addCarButton").style.display = admin ? "inline-block" : "none";
-    $("authButton").style.display = admin ? "none" : "inline-block";
-    $("logoutButton").style.display = admin ? "inline-block" : "none";
+    $("addCarButton").style.display =
+      admin ? "inline-block" : "none";
 
-    $("authInfo").textContent = admin
-      ? (session.user?.email || "Admin")
-      : "";
+    $("authButton").style.display =
+      admin ? "none" : "inline-block";
+
+    $("logoutButton").style.display =
+      admin ? "inline-block" : "none";
+
+    $("authInfo").textContent =
+      admin ? (session.user?.email || "Admin") : "";
 
     if (!admin) {
       placementMode = false;
@@ -726,7 +744,7 @@
     renderCars();
   }
 
-  /* AUTH */
+  /* ВХОД */
   async function authRequest(path, options = {}) {
     const response = await fetch(
       SUPABASE_URL + "/auth/v1/" + path,
@@ -759,7 +777,16 @@
     session = value;
 
     if (value) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(value));
+      if (!value.expires_at && value.expires_in) {
+        value.expires_at =
+          Math.floor(Date.now() / 1000) +
+          Number(value.expires_in);
+      }
+
+      localStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify(value)
+      );
     } else {
       localStorage.removeItem(SESSION_KEY);
     }
@@ -815,10 +842,10 @@
       if (expiresAt && expiresAt <= now + 60) {
         await refreshSession();
       } else {
-        /* Проверяем токен через Supabase */
         const user = await authRequest("user", {
           headers: {
-            Authorization: "Bearer " + session.access_token
+            Authorization:
+              "Bearer " + session.access_token
           }
         });
 
@@ -837,7 +864,7 @@
   $("authButton").addEventListener("click", () => {
     closePanels();
     $("loginMessage").textContent = "";
-    $("loginPanel").style.display = "block";
+    loginPanel.style.display = "block";
   });
 
   $("closeLogin").addEventListener("click", () => {
@@ -867,6 +894,13 @@
         }
       );
 
+      if (result.user?.id !== ADMIN_UID) {
+        $("loginMessage").textContent =
+          "Dieses Konto hat keine Administratorrechte.";
+
+        return;
+      }
+
       saveSession(result);
 
       $("loginPassword").value = "";
@@ -874,7 +908,7 @@
       loginPanel.style.display = "none";
 
       setStatus("Als Administrator angemeldet.");
-      await loadCars();
+      await loadCars(true);
     } catch (error) {
       console.error(error);
       $("loginMessage").textContent =
@@ -898,22 +932,25 @@
 
     if (token) {
       try {
-        await fetch(SUPABASE_URL + "/auth/v1/logout", {
-          method: "POST",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: "Bearer " + token
+        await fetch(
+          SUPABASE_URL + "/auth/v1/logout",
+          {
+            method: "POST",
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: "Bearer " + token
+            }
           }
-        });
+        );
       } catch (error) {
         console.error(error);
       }
     }
 
-    await loadCars();
+    await loadCars(true);
   });
 
-  /* API */
+  /* ЗАПРОСЫ К БАЗЕ */
   async function apiRequest(path, options = {}, retry = true) {
     const response = await fetch(
       SUPABASE_URL + "/rest/v1/" + path,
@@ -949,23 +986,78 @@
     return response;
   }
 
-  async function loadCars() {
+  /*
+   * АВТООБНОВЛЕНИЕ
+   *
+   * Считываем данные из Supabase каждые 3 секунды.
+   * Перерисовываем карту только тогда, когда данные
+   * действительно изменились.
+   *
+   * Во время перетаскивания и сохранения не обновляем
+   * карту, чтобы машинка не прыгала под курсором.
+   */
+  async function loadCars(force = false) {
+    if (refreshInProgress) return;
+
+    if (
+      !force &&
+      (dragInProgress || savingInProgress || placementMode)
+    ) {
+      return;
+    }
+
+    if (!force && document.hidden) {
+      return;
+    }
+
+    refreshInProgress = true;
+
     try {
       const response = await apiRequest(
         "cars?select=*&order=id.asc"
       );
 
-      cars = await response.json();
-      renderCars();
+      const incomingCars = await response.json();
+      const snapshot = JSON.stringify(incomingCars);
+
+      if (force || snapshot !== lastCarsSnapshot) {
+        cars = incomingCars;
+        lastCarsSnapshot = snapshot;
+
+        if (selectedCar) {
+          const updatedSelected = cars.find(
+            car => car.id === selectedCar.id
+          );
+
+          if (updatedSelected) {
+            selectedCar = updatedSelected;
+          } else {
+            selectedCar = null;
+            card.style.display = "none";
+          }
+        }
+
+        renderCars();
+      }
     } catch (error) {
-      console.error(error);
-      setStatus("Fehler beim Laden der Fahrzeuge.");
+      console.error("Auto refresh error:", error);
+
+      if (force) {
+        setStatus("Fehler beim Laden der Fahrzeuge.");
+      }
+    } finally {
+      refreshInProgress = false;
     }
   }
 
-  /* МОДЕЛЬ И ЦВЕТ */
+  /* МОДЕЛИ И ЦВЕТА */
   function getVehicleType(model) {
     const m = (model || "").toLowerCase();
+
+    if (
+      m.includes("f-150") ||
+      m.includes("f150")
+    ) return "f150";
 
     if (m.includes("puma")) return "puma";
     if (m.includes("transporter")) return "transporter";
@@ -975,7 +1067,11 @@
     if (m.includes("capri")) return "capri";
     if (m.includes("focus")) return "focus";
     if (m.includes("opel")) return "opel";
-    if (m.includes("škoda") || m.includes("skoda")) return "skoda";
+
+    if (
+      m.includes("škoda") ||
+      m.includes("skoda")
+    ) return "skoda";
 
     return "focus";
   }
@@ -983,12 +1079,37 @@
   function getCarColor(color) {
     const c = (color || "").toLowerCase();
 
-    if (c.includes("white") || c.includes("weiß")) return "#ffffff";
-    if (c.includes("black") || c.includes("schwarz")) return "#171717";
-    if (c.includes("red") || c.includes("rot")) return "#dc2626";
+    if (
+      c.includes("white") ||
+      c.includes("weiß")
+    ) return "#ffffff";
+
+    if (
+      c.includes("black") ||
+      c.includes("schwarz")
+    ) return "#171717";
+
+    if (
+      c.includes("red") ||
+      c.includes("rot")
+    ) return "#dc2626";
+
     if (c.includes("orange")) return "#f97316";
-    if (c.includes("green") || c.includes("grün")) return "#16a34a";
-    if (c.includes("blue") || c.includes("blau")) return "#2563eb";
+
+    if (
+      c.includes("yellow") ||
+      c.includes("gelb")
+    ) return "#facc15";
+
+    if (
+      c.includes("green") ||
+      c.includes("grün")
+    ) return "#16a34a";
+
+    if (
+      c.includes("blue") ||
+      c.includes("blau")
+    ) return "#2563eb";
 
     if (
       c.includes("gray") ||
@@ -996,9 +1117,10 @@
       c.includes("grau")
     ) return "#6b7280";
 
-    if (c.includes("silver") || c.includes("silber")) {
-      return "#cbd5e1";
-    }
+    if (
+      c.includes("silver") ||
+      c.includes("silber")
+    ) return "#cbd5e1";
 
     return "#ffffff";
   }
@@ -1059,12 +1181,16 @@
     return shape;
   }
 
-  /* КООРДИНАТЫ ОТНОСИТЕЛЬНО ФОТО */
+  /* КООРДИНАТЫ НА ФОТО */
   function getMapPercent(clientX, clientY) {
-    const rect = $("parkingImage").getBoundingClientRect();
+    const rect =
+      $("parkingImage").getBoundingClientRect();
 
-    let x = ((clientX - rect.left) / rect.width) * 100;
-    let y = ((clientY - rect.top) / rect.height) * 100;
+    let x =
+      ((clientX - rect.left) / rect.width) * 100;
+
+    let y =
+      ((clientY - rect.top) / rect.height) * 100;
 
     x = Math.max(0, Math.min(100, x));
     y = Math.max(0, Math.min(100, y));
@@ -1075,8 +1201,10 @@
     };
   }
 
-  /* ОТОБРАЖЕНИЕ МАШИН */
+  /* РИСУЕМ МАШИНЫ */
   function renderCars() {
+    if (dragInProgress) return;
+
     markers.innerHTML = "";
     let visibleCount = 0;
 
@@ -1086,7 +1214,8 @@
         car.position_y == null
       ) return;
 
-      const marker = document.createElement("button");
+      const marker =
+        document.createElement("button");
 
       marker.type = "button";
       marker.className = "marker";
@@ -1134,11 +1263,11 @@
       visibleCount +
       " Fahrzeug" +
       (visibleCount === 1 ? "" : "e") +
-      " angezeigt"
+      " angezeigt · Automatische Aktualisierung aktiv"
     );
   }
 
-  /* ПЕРЕМЕЩЕНИЕ: ТОЛЬКО ПОСЛЕ ВХОДА */
+  /* ПЕРЕТАСКИВАНИЕ — ТОЛЬКО АДМИНИСТРАТОР */
   function enableDrag(marker, car) {
     let startX = 0;
     let startY = 0;
@@ -1153,13 +1282,14 @@
       startX = event.clientX;
       startY = event.clientY;
 
+      dragInProgress = true;
       marker.setPointerCapture(event.pointerId);
     });
 
     marker.addEventListener("pointermove", event => {
-      if (!marker.hasPointerCapture(event.pointerId)) {
-        return;
-      }
+      if (
+        !marker.hasPointerCapture(event.pointerId)
+      ) return;
 
       const distance = Math.hypot(
         event.clientX - startX,
@@ -1183,18 +1313,23 @@
     });
 
     marker.addEventListener("pointerup", async event => {
-      if (!marker.hasPointerCapture(event.pointerId)) {
-        return;
-      }
+      if (
+        !marker.hasPointerCapture(event.pointerId)
+      ) return;
 
       marker.releasePointerCapture(event.pointerId);
 
-      if (!moved) return;
+      if (!moved) {
+        dragInProgress = false;
+        return;
+      }
 
       const pos = getMapPercent(
         event.clientX,
         event.clientY
       );
+
+      savingInProgress = true;
 
       try {
         setStatus("Position wird gespeichert...");
@@ -1216,21 +1351,30 @@
         car.position_x = pos.x;
         car.position_y = pos.y;
 
+        /* Следующая проверка обновит и других зрителей. */
+        lastCarsSnapshot = "";
         setStatus("Position gespeichert.");
       } catch (error) {
         console.error(error);
-        alert("Position konnte nicht gespeichert werden.");
+        alert(
+          "Position konnte nicht gespeichert werden."
+        );
       } finally {
+        dragInProgress = false;
+        savingInProgress = false;
+
         renderCars();
 
-        /* Не открываем карточку после перетаскивания */
         setTimeout(() => {
           dragging = false;
         }, 100);
+
+        loadCars(true);
       }
     });
 
     marker.addEventListener("pointercancel", () => {
+      dragInProgress = false;
       dragging = false;
       renderCars();
     });
@@ -1242,22 +1386,22 @@
       .some(option => option.value === value);
 
     if (!exists && value) {
-      const option = document.createElement("option");
+      const option =
+        document.createElement("option");
+
       option.value = value;
       option.textContent = value;
       select.appendChild(option);
     }
 
-    select.value = value || select.options[0]?.value || "";
+    select.value =
+      value || select.options[0]?.value || "";
   }
 
   function updateMobileButton(url) {
     const button = $("mobileButton");
 
-    if (
-      url &&
-      /^https?:\/\//i.test(url)
-    ) {
+    if (url && /^https?:\/\//i.test(url)) {
       button.href = url;
       button.style.display = "block";
     } else {
@@ -1273,12 +1417,15 @@
       car.model || "Fahrzeug";
 
     $("editVin").value = car.vin5 || "";
-    $("editFahrnummer").value = car.fahrnummer || "";
+
+    $("editFahrnummer").value =
+      car.fahrnummer || "";
 
     setSelectValue($("editModel"), car.model);
     setSelectValue($("editColor"), car.color);
 
-    $("editMobileUrl").value = car.mobile_url || "";
+    $("editMobileUrl").value =
+      car.mobile_url || "";
 
     const admin = isAdmin();
 
@@ -1309,217 +1456,315 @@
     card.style.display = "none";
   });
 
-  /* СОХРАНИТЬ ИЗМЕНЕНИЯ */
-  $("saveCarButton").addEventListener("click", async () => {
-    if (!isAdmin() || !selectedCar) return;
+  /* СОХРАНЕНИЕ */
+  $("saveCarButton").addEventListener(
+    "click",
+    async () => {
+      if (!isAdmin() || !selectedCar) return;
 
-    const vin = $("editVin").value.trim();
-    const fahrnummer = $("editFahrnummer").value.trim();
-    const model = $("editModel").value;
-    const color = $("editColor").value;
-    const mobileUrl = $("editMobileUrl").value.trim();
+      const vin = $("editVin").value.trim();
 
-    if (!vin || !fahrnummer) {
-      alert("Bitte VIN und Fahrzeugnummer eingeben.");
-      return;
-    }
+      const fahrnummer =
+        $("editFahrnummer").value.trim();
 
-    $("saveCarButton").disabled = true;
+      const model = $("editModel").value;
+      const color = $("editColor").value;
 
-    try {
-      setStatus("Änderungen werden gespeichert...");
+      const mobileUrl =
+        $("editMobileUrl").value.trim();
 
-      await apiRequest(
-        `cars?id=eq.${selectedCar.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            Prefer: "return=minimal"
-          },
-          body: JSON.stringify({
-            vin5: vin,
-            fahrnummer,
-            model,
-            color,
-            mobile_url: mobileUrl
-          })
-        }
-      );
-
-      Object.assign(selectedCar, {
-        vin5: vin,
-        fahrnummer,
-        model,
-        color,
-        mobile_url: mobileUrl
-      });
-
-      $("cardTitle").textContent = model;
-      updateMobileButton(mobileUrl);
-
-      renderCars();
-      setStatus("Änderungen gespeichert.");
-    } catch (error) {
-      console.error(error);
-      alert("Änderungen konnten nicht gespeichert werden.");
-    } finally {
-      $("saveCarButton").disabled = false;
-    }
-  });
-
-  /* УДАЛЕНИЕ */
-  $("deleteCarButton").addEventListener("click", async () => {
-    if (!isAdmin() || !selectedCar) return;
-
-    const confirmed = confirm(
-      `Fahrzeug ${selectedCar.vin5 || ""} wirklich löschen?`
-    );
-
-    if (!confirmed) return;
-
-    const id = selectedCar.id;
-
-    try {
-      setStatus("Fahrzeug wird gelöscht...");
-
-      await apiRequest(
-        `cars?id=eq.${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Prefer: "return=minimal"
-          }
-        }
-      );
-
-      cars = cars.filter(car => car.id !== id);
-
-      selectedCar = null;
-      card.style.display = "none";
-
-      renderCars();
-      setStatus("Fahrzeug gelöscht.");
-    } catch (error) {
-      console.error(error);
-      alert("Fahrzeug konnte nicht gelöscht werden.");
-    }
-  });
-
-  /* ДОБАВЛЕНИЕ */
-  $("addCarButton").addEventListener("click", () => {
-    if (!isAdmin()) return;
-
-    selectedCar = null;
-    closePanels();
-    addPanel.style.display = "block";
-  });
-
-  $("cancelAddButton").addEventListener("click", () => {
-    addPanel.style.display = "none";
-    placementMode = false;
-    pendingCar = null;
-    $("placementMessage").style.display = "none";
-  });
-
-  $("placeCarButton").addEventListener("click", () => {
-    if (!isAdmin()) return;
-
-    const vin = $("newVin").value.trim();
-    const fahrnummer = $("newFahrnummer").value.trim();
-
-    if (!vin || !fahrnummer) {
-      alert("Bitte VIN und Fahrzeugnummer eingeben.");
-      return;
-    }
-
-    pendingCar = {
-      vin5: vin,
-      fahrnummer,
-      model: $("newModel").value,
-      color: $("newColor").value,
-      mobile_url: $("newMobileUrl").value.trim()
-    };
-
-    placementMode = true;
-    addPanel.style.display = "none";
-
-    $("placementMessage").textContent =
-      "Klicke jetzt auf die gewünschte Position auf dem Parkplatz.";
-
-    $("placementMessage").style.display = "block";
-  });
-
-  mapWrapper.addEventListener("click", async event => {
-    if (!isAdmin() || !placementMode || !pendingCar) {
-      return;
-    }
-
-    if (event.target.closest(".marker")) {
-      return;
-    }
-
-    const pos = getMapPercent(
-      event.clientX,
-      event.clientY
-    );
-
-    const newCar = {
-      ...pendingCar,
-      position_x: pos.x,
-      position_y: pos.y
-    };
-
-    placementMode = false;
-
-    try {
-      $("placementMessage").textContent =
-        "Fahrzeug wird gespeichert...";
-
-      const response = await apiRequest(
-        "cars",
-        {
-          method: "POST",
-          headers: {
-            Prefer: "return=representation"
-          },
-          body: JSON.stringify(newCar)
-        }
-      );
-
-      const created = await response.json();
-
-      if (created[0]) {
-        cars.push(created[0]);
+      if (!vin || !fahrnummer) {
+        alert(
+          "Bitte VIN und Fahrzeugnummer eingeben."
+        );
+        return;
       }
 
+      $("saveCarButton").disabled = true;
+      savingInProgress = true;
+
+      try {
+        setStatus(
+          "Änderungen werden gespeichert..."
+        );
+
+        await apiRequest(
+          `cars?id=eq.${selectedCar.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              Prefer: "return=minimal"
+            },
+            body: JSON.stringify({
+              vin5: vin,
+              fahrnummer,
+              model,
+              color,
+              mobile_url: mobileUrl
+            })
+          }
+        );
+
+        Object.assign(selectedCar, {
+          vin5: vin,
+          fahrnummer,
+          model,
+          color,
+          mobile_url: mobileUrl
+        });
+
+        $("cardTitle").textContent = model;
+        updateMobileButton(mobileUrl);
+
+        lastCarsSnapshot = "";
+        renderCars();
+
+        setStatus("Änderungen gespeichert.");
+      } catch (error) {
+        console.error(error);
+
+        alert(
+          "Änderungen konnten nicht gespeichert werden."
+        );
+      } finally {
+        savingInProgress = false;
+        $("saveCarButton").disabled = false;
+        loadCars(true);
+      }
+    }
+  );
+
+  /* УДАЛЕНИЕ */
+  $("deleteCarButton").addEventListener(
+    "click",
+    async () => {
+      if (!isAdmin() || !selectedCar) return;
+
+      const confirmed = confirm(
+        `Fahrzeug ${
+          selectedCar.vin5 || ""
+        } wirklich löschen?`
+      );
+
+      if (!confirmed) return;
+
+      const id = selectedCar.id;
+      savingInProgress = true;
+
+      try {
+        setStatus("Fahrzeug wird gelöscht...");
+
+        await apiRequest(
+          `cars?id=eq.${id}`,
+          {
+            method: "DELETE",
+            headers: {
+              Prefer: "return=minimal"
+            }
+          }
+        );
+
+        cars = cars.filter(
+          car => car.id !== id
+        );
+
+        selectedCar = null;
+        card.style.display = "none";
+
+        lastCarsSnapshot = "";
+        renderCars();
+
+        setStatus("Fahrzeug gelöscht.");
+      } catch (error) {
+        console.error(error);
+
+        alert(
+          "Fahrzeug konnte nicht gelöscht werden."
+        );
+      } finally {
+        savingInProgress = false;
+        loadCars(true);
+      }
+    }
+  );
+
+  /* ДОБАВЛЕНИЕ */
+  $("addCarButton").addEventListener(
+    "click",
+    () => {
+      if (!isAdmin()) return;
+
+      selectedCar = null;
+      closePanels();
+      addPanel.style.display = "block";
+    }
+  );
+
+  $("cancelAddButton").addEventListener(
+    "click",
+    () => {
+      addPanel.style.display = "none";
+      placementMode = false;
       pendingCar = null;
-      $("placementMessage").style.display = "none";
 
-      $("newVin").value = "";
-      $("newFahrnummer").value = "";
-      $("newMobileUrl").value = "";
+      $("placementMessage").style.display =
+        "none";
+    }
+  );
 
-      renderCars();
-    } catch (error) {
-      console.error(error);
+  $("placeCarButton").addEventListener(
+    "click",
+    () => {
+      if (!isAdmin()) return;
 
-      alert("Fahrzeug konnte nicht gespeichert werden.");
+      const vin = $("newVin").value.trim();
+
+      const fahrnummer =
+        $("newFahrnummer").value.trim();
+
+      if (!vin || !fahrnummer) {
+        alert(
+          "Bitte VIN und Fahrzeugnummer eingeben."
+        );
+        return;
+      }
+
+      pendingCar = {
+        vin5: vin,
+        fahrnummer,
+        model: $("newModel").value,
+        color: $("newColor").value,
+        mobile_url:
+          $("newMobileUrl").value.trim()
+      };
 
       placementMode = true;
+      addPanel.style.display = "none";
+
       $("placementMessage").textContent =
-        "Fehler beim Speichern. Bitte erneut auf den Parkplatz klicken.";
+        "Klicke jetzt auf die gewünschte Position auf dem Parkplatz.";
+
+      $("placementMessage").style.display =
+        "block";
     }
-  });
+  );
 
-  /* ФИЛЬТРЫ */
-  $("search").addEventListener("input", renderCars);
-  $("modelFilter").addEventListener("change", renderCars);
-  $("colorFilter").addEventListener("change", renderCars);
+  mapWrapper.addEventListener(
+    "click",
+    async event => {
+      if (
+        !isAdmin() ||
+        !placementMode ||
+        !pendingCar
+      ) return;
 
-  /* ЗАПУСК */
+      if (event.target.closest(".marker")) {
+        return;
+      }
+
+      const pos = getMapPercent(
+        event.clientX,
+        event.clientY
+      );
+
+      const newCar = {
+        ...pendingCar,
+        position_x: pos.x,
+        position_y: pos.y
+      };
+
+      placementMode = false;
+      savingInProgress = true;
+
+      try {
+        $("placementMessage").textContent =
+          "Fahrzeug wird gespeichert...";
+
+        const response = await apiRequest(
+          "cars",
+          {
+            method: "POST",
+            headers: {
+              Prefer: "return=representation"
+            },
+            body: JSON.stringify(newCar)
+          }
+        );
+
+        const created =
+          await response.json();
+
+        if (created[0]) {
+          cars.push(created[0]);
+        }
+
+        pendingCar = null;
+
+        $("placementMessage").style.display =
+          "none";
+
+        $("newVin").value = "";
+        $("newFahrnummer").value = "";
+        $("newMobileUrl").value = "";
+
+        lastCarsSnapshot = "";
+        renderCars();
+      } catch (error) {
+        console.error(error);
+
+        alert(
+          "Fahrzeug konnte nicht gespeichert werden."
+        );
+
+        placementMode = true;
+
+        $("placementMessage").textContent =
+          "Fehler beim Speichern. Bitte erneut auf den Parkplatz klicken.";
+      } finally {
+        savingInProgress = false;
+
+        if (!placementMode) {
+          loadCars(true);
+        }
+      }
+    }
+  );
+
+  /* ПОИСК И ФИЛЬТРЫ */
+  $("search").addEventListener(
+    "input",
+    renderCars
+  );
+
+  $("modelFilter").addEventListener(
+    "change",
+    renderCars
+  );
+
+  $("colorFilter").addEventListener(
+    "change",
+    renderCars
+  );
+
+  /* ЗАПУСК САЙТА */
   async function start() {
     await restoreSession();
-    await loadCars();
+    await loadCars(true);
+
+    /* Проверяем изменения каждые 3 секунды. */
+    setInterval(() => {
+      loadCars();
+    }, AUTO_REFRESH_MS);
+
+    /* После возвращения на вкладку обновляем сразу. */
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (!document.hidden) {
+          loadCars(true);
+        }
+      }
+    );
   }
 
   start();
