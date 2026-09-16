@@ -1,21 +1,19 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Parking · Fahrzeugkarte</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f4f5f7;
-      color: #111;
+      color: #111827;
     }
 
     header {
@@ -31,35 +29,56 @@
 
     .toolbar {
       display: flex;
-      gap: 7px;
       flex-wrap: wrap;
+      gap: 7px;
       align-items: center;
     }
 
-    input,
-    select,
-    button {
+    input, select, button {
       min-height: 40px;
-      padding: 8px 11px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
       border-radius: 7px;
-      border: 1px solid #ccc;
       font-size: 15px;
     }
 
-    input {
-      flex: 1;
-      min-width: 170px;
-    }
+    input { min-width: 150px; }
 
-    button {
-      cursor: pointer;
+    button { cursor: pointer; }
+
+    #search {
+      flex: 1;
+      min-width: 180px;
     }
 
     #addCarButton {
       background: #16a34a;
       color: white;
-      border: 0;
+      border: none;
       font-weight: bold;
+    }
+
+    #authButton {
+      background: #2563eb;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+
+    #logoutButton {
+      background: #475569;
+      color: white;
+      border: none;
+    }
+
+    #addCarButton, #logoutButton {
+      display: none;
+    }
+
+    #authInfo {
+      font-size: 12px;
+      color: #d1fae5;
+      overflow-wrap: anywhere;
     }
 
     main {
@@ -70,15 +89,15 @@
 
     #status {
       margin-bottom: 8px;
+      color: #475569;
       font-size: 13px;
-      color: #555;
     }
 
     #placementMessage {
       display: none;
       margin-bottom: 8px;
       padding: 10px;
-      background: #fff7cc;
+      background: #fef9c3;
       border: 1px solid #eab308;
       border-radius: 8px;
       font-weight: bold;
@@ -88,9 +107,9 @@
       position: relative;
       width: 100%;
       overflow: hidden;
+      border: 1px solid #cbd5e1;
       border-radius: 10px;
       background: #ddd;
-      border: 1px solid #ccc;
     }
 
     #parkingImage {
@@ -107,183 +126,117 @@
       pointer-events: none;
     }
 
-    /* =========================
-       MARKER
-    ========================= */
-
+    /* Машинка: точка координат находится в центре кузова,
+       а подпись VIN не сдвигает эту точку. */
     .marker {
       position: absolute;
-      transform: translate(-50%, -50%);
       width: 36px;
-      min-height: 52px;
-
-      border: 0;
-      margin: 0;
+      height: 36px;
       padding: 0;
-
+      margin: 0;
+      border: 0;
       background: transparent;
-
+      transform: translate(-50%, -50%);
       pointer-events: auto;
       touch-action: none;
-
-      cursor: grab;
-
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
+      cursor: pointer;
       z-index: 5;
+      overflow: visible;
     }
 
-    .marker:active {
+    .marker.admin {
+      cursor: grab;
+    }
+
+    .marker.admin:active {
       cursor: grabbing;
     }
 
     .marker.hidden {
-      opacity: 0.15;
+      opacity: 0.12;
     }
 
-    /* =========================
-       ALL CARS
-    ========================= */
-
     .carShape {
-      position: relative;
-
+      position: absolute;
+      left: 50%;
+      top: 50%;
       width: 22px;
-      height: 36px;
-
-      background: var(--car-color, #fff);
-
-      border: 1.5px solid #222;
-      border-radius: 5px;
-
+      height: 34px;
+      transform: translate(-50%, -50%);
+      background: var(--car-color, white);
+      border: 1.5px solid #202020;
+      border-radius: 6px;
       box-shadow: 0 2px 4px rgba(0,0,0,.45);
+    }
 
-      flex-shrink: 0;
+    .frontWindow, .rearWindow, .roof,
+    .wheel, .headlight {
+      position: absolute;
     }
 
     .frontWindow {
-      position: absolute;
       top: 5px;
       left: 3px;
       right: 3px;
-
       height: 7px;
-
-      background: #374151;
-
+      background: #334155;
+      border: 1px solid rgba(255,255,255,.25);
       border-radius: 3px 3px 1px 1px;
     }
 
     .rearWindow {
-      position: absolute;
       bottom: 5px;
       left: 4px;
       right: 4px;
-
       height: 6px;
-
-      background: #374151;
-
+      background: #334155;
       border-radius: 1px 1px 3px 3px;
     }
 
     .roof {
-      position: absolute;
       top: 14px;
       bottom: 13px;
       left: 4px;
       right: 4px;
-
       border: 1px solid rgba(0,0,0,.25);
       border-radius: 2px;
     }
 
     .wheel {
-      position: absolute;
-
       width: 3px;
       height: 8px;
-
       background: #111;
-
       border-radius: 2px;
     }
 
-    .wheel.fl {
-      left: -3px;
-      top: 7px;
-    }
-
-    .wheel.fr {
-      right: -3px;
-      top: 7px;
-    }
-
-    .wheel.rl {
-      left: -3px;
-      bottom: 6px;
-    }
-
-    .wheel.rr {
-      right: -3px;
-      bottom: 6px;
-    }
+    .wheel.fl { left: -3px; top: 7px; }
+    .wheel.fr { right: -3px; top: 7px; }
+    .wheel.rl { left: -3px; bottom: 6px; }
+    .wheel.rr { right: -3px; bottom: 6px; }
 
     .headlight {
-      position: absolute;
-
       top: 1px;
-
       width: 4px;
       height: 2px;
-
       background: #fde047;
     }
 
-    .headlight.left {
-      left: 3px;
-    }
+    .headlight.left { left: 3px; }
+    .headlight.right { right: 3px; }
 
-    .headlight.right {
-      right: 3px;
-    }
-
-    /* =========================
-       MODEL SHAPES
-    ========================= */
-
-    /* PUMA - kompakter Crossover */
+    /* Разные формы автомобилей */
     .carShape.puma {
       width: 21px;
       height: 33px;
       border-radius: 8px 8px 6px 6px;
     }
 
-    .carShape.puma .roof {
-      left: 5px;
-      right: 5px;
-    }
-
-    /* TRANSIT - langer Transporter */
     .carShape.transit {
       width: 22px;
       height: 41px;
       border-radius: 4px;
     }
 
-    .carShape.transit .frontWindow {
-      top: 4px;
-      height: 8px;
-    }
-
-    .carShape.transit .rearWindow {
-      bottom: 4px;
-      height: 7px;
-    }
-
-    /* TRANSPORTER - breiter Kastenwagen */
     .carShape.transporter {
       width: 24px;
       height: 39px;
@@ -293,42 +246,12 @@
     .carShape.transporter .roof {
       left: 3px;
       right: 3px;
-      border-radius: 1px;
     }
 
-    .carShape.transporter::before {
-      content: "";
-      position: absolute;
-      left: 2px;
-      right: 2px;
-      top: 16px;
-      border-top: 1px solid rgba(0,0,0,.25);
-    }
-
-    /* RANGER - Pickup mit Ladefläche */
     .carShape.ranger {
       width: 24px;
       height: 38px;
       border-radius: 5px;
-    }
-
-    .carShape.ranger::after {
-      content: "";
-      position: absolute;
-      left: 3px;
-      right: 3px;
-      bottom: 3px;
-      height: 10px;
-      border: 1px solid rgba(0,0,0,.55);
-      border-radius: 1px;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          transparent,
-          transparent 2px,
-          rgba(0,0,0,.16) 2px,
-          rgba(0,0,0,.16) 3px
-        );
     }
 
     .carShape.ranger .rearWindow {
@@ -339,136 +262,96 @@
       bottom: 15px;
     }
 
-    /* KUGA - SUV */
+    .carShape.ranger::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+      height: 10px;
+      border: 1px solid rgba(0,0,0,.55);
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0 2px,
+        rgba(0,0,0,.16) 2px 3px
+      );
+    }
+
     .carShape.kuga {
       width: 24px;
       height: 35px;
-      border-radius: 7px 7px 5px 5px;
+      border-radius: 7px;
     }
 
-    .carShape.kuga .roof {
-      left: 4px;
-      right: 4px;
-    }
-
-    /* CAPRI - sportlicher, schmaler */
     .carShape.capri {
       width: 20px;
       height: 34px;
       border-radius: 10px 10px 5px 5px;
     }
 
-    .carShape.capri .frontWindow {
-      left: 4px;
-      right: 4px;
-    }
-
-    /* FOCUS - klassischer Pkw */
     .carShape.focus {
       width: 21px;
       height: 34px;
       border-radius: 6px;
     }
 
-    .carShape.focus .roof {
-      left: 5px;
-      right: 5px;
-      border-radius: 3px;
-    }
-
-    /* OPEL - rundlicher Pkw */
     .carShape.opel {
       width: 22px;
       height: 34px;
       border-radius: 9px 9px 6px 6px;
     }
 
-    .carShape.opel::before {
-      content: "";
-      position: absolute;
-      left: 7px;
-      right: 7px;
-      top: 16px;
-      border-top: 2px solid rgba(0,0,0,.28);
-    }
-
-    /* SKODA - kantiger Pkw */
     .carShape.skoda {
       width: 22px;
       height: 35px;
       border-radius: 4px 4px 6px 6px;
     }
 
-    .carShape.skoda .rearWindow {
-      left: 3px;
-      right: 3px;
-      height: 7px;
-    }
-
     .carVin {
-      margin-top: 2px;
-
+      position: absolute;
+      left: 50%;
+      top: calc(50% + 23px);
+      transform: translateX(-50%);
       min-width: 31px;
-
       padding: 1px 3px;
-
-      background: white;
-      color: #111;
-
       border: 1px solid #333;
       border-radius: 3px;
-
+      background: white;
+      color: #111;
       font-size: 7px;
       line-height: 9px;
       font-weight: bold;
-
       text-align: center;
-
+      white-space: nowrap;
       box-shadow: 0 1px 3px rgba(0,0,0,.3);
     }
 
-    /* =========================
-       PANELS
-    ========================= */
-
-    #card,
-    #addPanel {
+    /* Окна */
+    .panel {
       display: none;
-
       position: fixed;
-
       left: 50%;
-
       transform: translateX(-50%);
-
       width: calc(100% - 30px);
       max-width: 450px;
-
-      background: white;
-
-      border-radius: 14px;
-
+      max-height: 85vh;
+      overflow-y: auto;
       padding: 18px;
-
+      background: white;
+      border-radius: 14px;
       box-shadow: 0 10px 40px rgba(0,0,0,.3);
-
       z-index: 30;
+    }
+
+    #addPanel, #loginPanel {
+      top: 70px;
     }
 
     #card {
       bottom: 18px;
-      max-height: 90vh;
-      overflow-y: auto;
     }
 
-    #addPanel {
-      top: 80px;
-      max-height: 85vh;
-      overflow-y: auto;
-    }
-
-    #card h2,
-    #addPanel h2 {
+    .panel h2 {
       margin: 0 0 14px;
     }
 
@@ -478,9 +361,7 @@
 
     .formRow label {
       display: block;
-
       margin-bottom: 4px;
-
       font-size: 13px;
       font-weight: bold;
     }
@@ -488,23 +369,6 @@
     .formRow input,
     .formRow select {
       width: 100%;
-    }
-
-    #closeCard {
-      float: right;
-
-      width: 34px;
-      height: 34px;
-
-      padding: 0;
-
-      border: 0;
-
-      border-radius: 50%;
-
-      background: #eee;
-
-      font-size: 19px;
     }
 
     .panelActions {
@@ -517,90 +381,63 @@
       flex: 1;
     }
 
-    #placeCarButton {
+    .primaryButton {
       background: #2563eb;
       color: white;
-      border: 0;
+      border: none;
       font-weight: bold;
     }
 
-    #saveCarButton {
-      width: 100%;
-
-      margin-top: 10px;
-
-      background: #2563eb;
-      color: white;
-
-      border: 0;
-
-      font-weight: bold;
-    }
-
-    #deleteCarButton {
-      width: 100%;
-
-      margin-top: 8px;
-
+    .dangerButton {
       background: #dc2626;
       color: white;
-
-      border: 0;
-
+      border: none;
       font-weight: bold;
+    }
+
+    .fullButton {
+      width: 100%;
+      margin-top: 8px;
     }
 
     .mobileButton {
       display: block;
-
       margin-top: 8px;
-
       padding: 11px;
-
       background: #16a34a;
       color: white;
-
       text-decoration: none;
       text-align: center;
-
       border-radius: 8px;
-
       font-weight: bold;
     }
 
-    @media (max-width: 700px) {
-
-      main {
-        padding: 6px;
-      }
-
-      header {
-        padding: 8px;
-      }
-
-      .marker {
-        width: 32px;
-      }
-
-      .carShape {
-        transform: scale(.9);
-      }
-
+    .closeButton {
+      float: right;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: #e5e7eb;
+      font-size: 20px;
     }
 
+    @media (max-width: 700px) {
+      main { padding: 6px; }
+      header { padding: 8px; }
+      .marker { width: 32px; height: 32px; }
+      .carShape { scale: .9; }
+    }
   </style>
 </head>
 
 <body>
 
 <header>
-
-  <h1>
-    Parking · Fahrzeugkarte
-  </h1>
+  <h1>Parking · Fahrzeugkarte</h1>
 
   <div class="toolbar">
-
     <input
       id="search"
       type="search"
@@ -608,53 +445,20 @@
     >
 
     <select id="modelFilter">
-
-      <option value="">
-        Alle Modelle
-      </option>
-
-      <option value="Ford Puma">
-        Ford Puma
-      </option>
-
-      <option value="Ford Transit">
-        Ford Transit
-      </option>
-
-      <option value="Transporter">
-        Transporter
-      </option>
-
-      <option value="Ford Ranger">
-        Ford Ranger
-      </option>
-
-      <option value="Ford Kuga">
-        Ford Kuga
-      </option>
-
-      <option value="Ford Capri">
-        Ford Capri
-      </option>
-<option value="Ford Focus">
-  Ford Focus
-</option>
-
-<option value="Opel">
-  Opel
-</option>
-
-<option value="Škoda">
-  Škoda
-</option>
+      <option value="">Alle Modelle</option>
+      <option value="Ford Puma">Ford Puma</option>
+      <option value="Ford Transit">Ford Transit</option>
+      <option value="Transporter">Transporter</option>
+      <option value="Ford Ranger">Ford Ranger</option>
+      <option value="Ford Kuga">Ford Kuga</option>
+      <option value="Ford Capri">Ford Capri</option>
+      <option value="Ford Focus">Ford Focus</option>
+      <option value="Opel">Opel</option>
+      <option value="Škoda">Škoda</option>
     </select>
 
     <select id="colorFilter">
-
-      <option value="">
-        Alle Farben
-      </option>
-
+      <option value="">Alle Farben</option>
       <option value="White">Weiß</option>
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
@@ -663,297 +467,105 @@
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
       <option value="Silver">Silber</option>
-
     </select>
 
-    <button
-      id="addCarButton"
-      type="button"
-    >
+    <button id="addCarButton" type="button">
       + Fahrzeug hinzufügen
     </button>
 
-  </div>
+    <button id="authButton" type="button">
+      Admin · Anmelden
+    </button>
 
+    <button id="logoutButton" type="button">
+      Abmelden
+    </button>
+
+    <span id="authInfo"></span>
+  </div>
 </header>
 
 <main>
-
-  <div id="status">
-    Fahrzeuge werden geladen...
-  </div>
+  <div id="status">Fahrzeuge werden geladen...</div>
 
   <div id="placementMessage">
     Klicke jetzt auf die gewünschte Position auf dem Parkplatz.
   </div>
 
   <div id="mapWrapper">
-
     <img
       id="parkingImage"
       src="./parking.png?v=3"
       alt="Parkplatz"
     >
-
     <div id="markers"></div>
-
   </div>
-
 </main>
 
-
-<!-- =========================
-     ADD
-========================= -->
-
-<div id="addPanel">
-
-  <h2>
-    Fahrzeug hinzufügen
-  </h2>
-
+<!-- ВХОД АДМИНИСТРАТОРА -->
+<div id="loginPanel" class="panel">
+  <button id="closeLogin" class="closeButton" type="button">×</button>
+  <h2>Admin · Anmelden</h2>
 
   <div class="formRow">
-
-    <label for="newVin">
-      VIN
-    </label>
-
+    <label for="loginEmail">E-Mail</label>
     <input
-      id="newVin"
-      type="text"
-      placeholder="z.B. 02236"
+      id="loginEmail"
+      type="email"
+      autocomplete="username"
+      placeholder="E-Mail"
     >
-
   </div>
 
-
   <div class="formRow">
-
-    <label for="newFahrnummer">
-      Fahrzeugnummer
-    </label>
-
+    <label for="loginPassword">Passwort</label>
     <input
-      id="newFahrnummer"
-      type="text"
-      placeholder="z.B. TZ-B504"
+      id="loginPassword"
+      type="password"
+      autocomplete="current-password"
+      placeholder="Passwort"
     >
-
   </div>
 
-
-  <div class="formRow">
-
-    <label for="newModel">
-      Modell
-    </label>
-
-    <select id="newModel">
-
-      <option value="Ford Puma">
-        Ford Puma
-      </option>
-
-      <option value="Ford Transit">
-        Ford Transit
-      </option>
-
-      <option value="Transporter">
-        Transporter
-      </option>
-
-      <option value="Ford Ranger">
-        Ford Ranger
-      </option>
-
-      <option value="Ford Kuga">
-        Ford Kuga
-      </option>
-
-      <option value="Ford Capri">
-        Ford Capri
-      </option>
-
-      <option value="Ford Focus">
-        Ford Focus
-      </option>
-
-      <option value="Opel">
-        Opel
-      </option>
-
-      <option value="Škoda">
-        Škoda
-      </option>
-
-    </select>
-
-  </div>
-
-
-  <div class="formRow">
-
-    <label for="newColor">
-      Farbe
-    </label>
-
-    <select id="newColor">
-
-      <option value="White">Weiß</option>
-      <option value="Black">Schwarz</option>
-      <option value="Red">Rot</option>
-      <option value="Orange">Orange</option>
-      <option value="Green">Grün</option>
-      <option value="Blue">Blau</option>
-      <option value="Gray">Grau</option>
-      <option value="Silver">Silber</option>
-
-    </select>
-
-  </div>
-
-
-  <div class="formRow">
-
-    <label for="newMobileUrl">
-      Mobile.de URL
-    </label>
-
-    <input
-      id="newMobileUrl"
-      type="url"
-      placeholder="https://..."
-    >
-
-  </div>
-
-
-  <div class="panelActions">
-
-    <button
-      id="cancelAddButton"
-      type="button"
-    >
-      Abbrechen
-    </button>
-
-    <button
-      id="placeCarButton"
-      type="button"
-    >
-      Auf Parkplatz setzen
-    </button>
-
-  </div>
-
-</div>
-
-
-<!-- =========================
-     EDIT
-========================= -->
-
-<div id="card">
-
-  <button
-    id="closeCard"
-    type="button"
-  >
-    ×
+  <button id="loginButton" class="primaryButton fullButton" type="button">
+    Anmelden
   </button>
 
+  <p id="loginMessage" style="font-size:13px;color:#b91c1c;"></p>
+</div>
 
-  <h2 id="cardTitle">
-    Fahrzeug bearbeiten
-  </h2>
-
+<!-- ДОБАВЛЕНИЕ -->
+<div id="addPanel" class="panel">
+  <h2>Fahrzeug hinzufügen</h2>
 
   <div class="formRow">
-
-    <label for="editVin">
-      VIN
-    </label>
-
-    <input
-      id="editVin"
-      type="text"
-    >
-
+    <label for="newVin">VIN</label>
+    <input id="newVin" type="text" placeholder="z.B. 02236">
   </div>
 
-
   <div class="formRow">
-
-    <label for="editFahrnummer">
-      Fahrzeugnummer
-    </label>
-
-    <input
-      id="editFahrnummer"
-      type="text"
-    >
-
+    <label for="newFahrnummer">Fahrzeugnummer</label>
+    <input id="newFahrnummer" type="text" placeholder="z.B. TZ-B504">
   </div>
 
-
   <div class="formRow">
-
-    <label for="editModel">
-      Modell
-    </label>
-
-    <select id="editModel">
-
-      <option value="Ford Puma">
-        Ford Puma
-      </option>
-
-      <option value="Ford Transit">
-        Ford Transit
-      </option>
-
-      <option value="Transporter">
-        Transporter
-      </option>
-
-      <option value="Ford Ranger">
-        Ford Ranger
-      </option>
-
-      <option value="Ford Kuga">
-        Ford Kuga
-      </option>
-
-      <option value="Ford Capri">
-        Ford Capri
-      </option>
-
-      <option value="Ford Focus">
-        Ford Focus
-      </option>
-
-      <option value="Opel">
-        Opel
-      </option>
-
-      <option value="Škoda">
-        Škoda
-      </option>
-
+    <label for="newModel">Modell</label>
+    <select id="newModel">
+      <option value="Ford Puma">Ford Puma</option>
+      <option value="Ford Transit">Ford Transit</option>
+      <option value="Transporter">Transporter</option>
+      <option value="Ford Ranger">Ford Ranger</option>
+      <option value="Ford Kuga">Ford Kuga</option>
+      <option value="Ford Capri">Ford Capri</option>
+      <option value="Ford Focus">Ford Focus</option>
+      <option value="Opel">Opel</option>
+      <option value="Škoda">Škoda</option>
     </select>
-
   </div>
 
-
   <div class="formRow">
-
-    <label for="editColor">
-      Farbe
-    </label>
-
-    <select id="editColor">
-
+    <label for="newColor">Farbe</label>
+    <select id="newColor">
       <option value="White">Weiß</option>
       <option value="Black">Schwarz</option>
       <option value="Red">Rot</option>
@@ -962,1670 +574,955 @@
       <option value="Blue">Blau</option>
       <option value="Gray">Grau</option>
       <option value="Silver">Silber</option>
-
     </select>
-
   </div>
-
 
   <div class="formRow">
-
-    <label for="editMobileUrl">
-      Mobile.de URL
-    </label>
-
-    <input
-      id="editMobileUrl"
-      type="url"
-      placeholder="https://..."
-    >
-
+    <label for="newMobileUrl">Mobile.de URL</label>
+    <input id="newMobileUrl" type="url" placeholder="https://...">
   </div>
 
+  <div class="panelActions">
+    <button id="cancelAddButton" type="button">Abbrechen</button>
+    <button id="placeCarButton" class="primaryButton" type="button">
+      Auf Parkplatz setzen
+    </button>
+  </div>
+</div>
+
+<!-- РЕДАКТИРОВАНИЕ -->
+<div id="card" class="panel">
+  <button id="closeCard" class="closeButton" type="button">×</button>
+  <h2 id="cardTitle">Fahrzeug</h2>
+
+  <div class="formRow">
+    <label for="editVin">VIN</label>
+    <input id="editVin" type="text">
+  </div>
+
+  <div class="formRow">
+    <label for="editFahrnummer">Fahrzeugnummer</label>
+    <input id="editFahrnummer" type="text">
+  </div>
+
+  <div class="formRow">
+    <label for="editModel">Modell</label>
+    <select id="editModel">
+      <option value="Ford Puma">Ford Puma</option>
+      <option value="Ford Transit">Ford Transit</option>
+      <option value="Transporter">Transporter</option>
+      <option value="Ford Ranger">Ford Ranger</option>
+      <option value="Ford Kuga">Ford Kuga</option>
+      <option value="Ford Capri">Ford Capri</option>
+      <option value="Ford Focus">Ford Focus</option>
+      <option value="Opel">Opel</option>
+      <option value="Škoda">Škoda</option>
+    </select>
+  </div>
+
+  <div class="formRow">
+    <label for="editColor">Farbe</label>
+    <select id="editColor">
+      <option value="White">Weiß</option>
+      <option value="Black">Schwarz</option>
+      <option value="Red">Rot</option>
+      <option value="Orange">Orange</option>
+      <option value="Green">Grün</option>
+      <option value="Blue">Blau</option>
+      <option value="Gray">Grau</option>
+      <option value="Silver">Silber</option>
+    </select>
+  </div>
+
+  <div class="formRow">
+    <label for="editMobileUrl">Mobile.de URL</label>
+    <input id="editMobileUrl" type="url" placeholder="https://...">
+  </div>
 
   <button
     id="saveCarButton"
+    class="primaryButton fullButton"
     type="button"
   >
     Änderungen speichern
   </button>
 
-
   <a
     id="mobileButton"
     class="mobileButton"
     target="_blank"
-    rel="noopener"
+    rel="noopener noreferrer"
   >
     Mobile.de öffnen
   </a>
 
-
   <button
     id="deleteCarButton"
+    class="dangerButton fullButton"
     type="button"
   >
     Fahrzeug löschen
   </button>
-
 </div>
 
-
 <script>
+  /* SUPABASE */
+  const SUPABASE_URL =
+    "https://cydestwofhdfsmekwxho.supabase.co";
 
-/* =========================
-   SUPABASE
-========================= */
+  const SUPABASE_KEY =
+    "sb_publishable_LNyn0n-rbQfu5AIMeAt9XQ_zqSpQ3Dh";
 
-const SUPABASE_URL =
-  "https://cydestwofhdfsmekwxho.supabase.co";
+  const SESSION_KEY = "parking_admin_session";
 
+  let cars = [];
+  let session = null;
+  let selectedCar = null;
+  let pendingCar = null;
+  let placementMode = false;
+  let dragging = false;
 
-const SUPABASE_KEY =
-  "sb_publishable_LNyn0n-rbQfu5AIMeAt9XQ_zqSpQ3Dh";
+  const $ = id => document.getElementById(id);
 
+  const markers = $("markers");
+  const mapWrapper = $("mapWrapper");
+  const status = $("status");
+  const card = $("card");
+  const addPanel = $("addPanel");
+  const loginPanel = $("loginPanel");
 
-let cars = [];
-
-let placementMode = false;
-
-let pendingCar = null;
-
-let selectedCar = null;
-
-let dragged = false;
-
-
-/* =========================
-   ELEMENTS
-========================= */
-
-const markers =
-  document.getElementById("markers");
-
-const mapWrapper =
-  document.getElementById("mapWrapper");
-
-const search =
-  document.getElementById("search");
-
-const modelFilter =
-  document.getElementById("modelFilter");
-
-const colorFilter =
-  document.getElementById("colorFilter");
-
-const status =
-  document.getElementById("status");
-
-const addPanel =
-  document.getElementById("addPanel");
-
-const card =
-  document.getElementById("card");
-
-const placementMessage =
-  document.getElementById("placementMessage");
-
-
-/* =========================
-   API
-========================= */
-
-async function apiRequest(
-  path,
-  options = {}
-) {
-
-  const response =
-    await fetch(
-
-      SUPABASE_URL +
-      "/rest/v1/" +
-      path,
-
-      {
-
-        ...options,
-
-        headers: {
-
-          apikey:
-            SUPABASE_KEY,
-
-          Authorization:
-            "Bearer " +
-            SUPABASE_KEY,
-
-          "Content-Type":
-            "application/json",
-
-          ...(options.headers || {})
-
-        }
-
-      }
-
-    );
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      await response.text()
-    );
-
+  function isAdmin() {
+    return Boolean(session && session.access_token);
   }
 
+  function setStatus(message) {
+    status.textContent = message;
+  }
 
-  return response;
-}
+  function closePanels() {
+    card.style.display = "none";
+    addPanel.style.display = "none";
+    loginPanel.style.display = "none";
+  }
 
+  function updateAdminUI() {
+    const admin = isAdmin();
 
-/* =========================
-   LOAD
-========================= */
+    $("addCarButton").style.display = admin ? "inline-block" : "none";
+    $("authButton").style.display = admin ? "none" : "inline-block";
+    $("logoutButton").style.display = admin ? "inline-block" : "none";
 
-async function loadCars() {
+    $("authInfo").textContent = admin
+      ? (session.user?.email || "Admin")
+      : "";
 
-  try {
+    if (!admin) {
+      placementMode = false;
+      pendingCar = null;
+      $("placementMessage").style.display = "none";
+      closePanels();
+    }
 
-    const response =
-      await apiRequest(
+    renderCars();
+  }
+
+  /* AUTH */
+  async function authRequest(path, options = {}) {
+    const response = await fetch(
+      SUPABASE_URL + "/auth/v1/" + path,
+      {
+        ...options,
+        headers: {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.msg ||
+        data.error_description ||
+        data.message ||
+        data.error ||
+        "Anmeldung fehlgeschlagen."
+      );
+    }
+
+    return data;
+  }
+
+  function saveSession(value) {
+    session = value;
+
+    if (value) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(value));
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+    }
+
+    updateAdminUI();
+  }
+
+  async function refreshSession() {
+    if (!session?.refresh_token) {
+      saveSession(null);
+      return false;
+    }
+
+    try {
+      const refreshed = await authRequest(
+        "token?grant_type=refresh_token",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            refresh_token: session.refresh_token
+          })
+        }
+      );
+
+      saveSession(refreshed);
+      return true;
+    } catch (error) {
+      console.error(error);
+      saveSession(null);
+      return false;
+    }
+  }
+
+  async function restoreSession() {
+    try {
+      const stored = localStorage.getItem(SESSION_KEY);
+
+      if (!stored) {
+        updateAdminUI();
+        return;
+      }
+
+      session = JSON.parse(stored);
+
+      if (!session?.access_token) {
+        saveSession(null);
+        return;
+      }
+
+      const expiresAt = session.expires_at || 0;
+      const now = Math.floor(Date.now() / 1000);
+
+      if (expiresAt && expiresAt <= now + 60) {
+        await refreshSession();
+      } else {
+        /* Проверяем токен через Supabase */
+        const user = await authRequest("user", {
+          headers: {
+            Authorization: "Bearer " + session.access_token
+          }
+        });
+
+        session.user = user;
+        updateAdminUI();
+      }
+    } catch (error) {
+      console.error(error);
+
+      if (!(await refreshSession())) {
+        saveSession(null);
+      }
+    }
+  }
+
+  $("authButton").addEventListener("click", () => {
+    closePanels();
+    $("loginMessage").textContent = "";
+    $("loginPanel").style.display = "block";
+  });
+
+  $("closeLogin").addEventListener("click", () => {
+    loginPanel.style.display = "none";
+    $("loginPassword").value = "";
+  });
+
+  $("loginButton").addEventListener("click", async () => {
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPassword").value;
+
+    if (!email || !password) {
+      $("loginMessage").textContent =
+        "Bitte E-Mail und Passwort eingeben.";
+      return;
+    }
+
+    $("loginButton").disabled = true;
+    $("loginMessage").textContent = "Anmeldung läuft...";
+
+    try {
+      const result = await authRequest(
+        "token?grant_type=password",
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password })
+        }
+      );
+
+      saveSession(result);
+
+      $("loginPassword").value = "";
+      $("loginMessage").textContent = "";
+      loginPanel.style.display = "none";
+
+      setStatus("Als Administrator angemeldet.");
+      await loadCars();
+    } catch (error) {
+      console.error(error);
+      $("loginMessage").textContent =
+        "Anmeldung fehlgeschlagen. E-Mail und Passwort prüfen.";
+    } finally {
+      $("loginButton").disabled = false;
+    }
+  });
+
+  $("loginPassword").addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      $("loginButton").click();
+    }
+  });
+
+  $("logoutButton").addEventListener("click", async () => {
+    const token = session?.access_token;
+
+    saveSession(null);
+    setStatus("Abgemeldet.");
+
+    if (token) {
+      try {
+        await fetch(SUPABASE_URL + "/auth/v1/logout", {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: "Bearer " + token
+          }
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    await loadCars();
+  });
+
+  /* API */
+  async function apiRequest(path, options = {}, retry = true) {
+    const response = await fetch(
+      SUPABASE_URL + "/rest/v1/" + path,
+      {
+        ...options,
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization:
+            "Bearer " +
+            (session?.access_token || SUPABASE_KEY),
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      }
+    );
+
+    if (
+      response.status === 401 &&
+      retry &&
+      session?.refresh_token
+    ) {
+      const refreshed = await refreshSession();
+
+      if (refreshed) {
+        return apiRequest(path, options, false);
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    return response;
+  }
+
+  async function loadCars() {
+    try {
+      const response = await apiRequest(
         "cars?select=*&order=id.asc"
       );
 
-
-    cars =
-      await response.json();
-
-
-    renderCars();
-
+      cars = await response.json();
+      renderCars();
+    } catch (error) {
+      console.error(error);
+      setStatus("Fehler beim Laden der Fahrzeuge.");
+    }
   }
 
-  catch (error) {
+  /* МОДЕЛЬ И ЦВЕТ */
+  function getVehicleType(model) {
+    const m = (model || "").toLowerCase();
 
-    console.error(error);
+    if (m.includes("puma")) return "puma";
+    if (m.includes("transporter")) return "transporter";
+    if (m.includes("transit")) return "transit";
+    if (m.includes("ranger")) return "ranger";
+    if (m.includes("kuga")) return "kuga";
+    if (m.includes("capri")) return "capri";
+    if (m.includes("focus")) return "focus";
+    if (m.includes("opel")) return "opel";
+    if (m.includes("škoda") || m.includes("skoda")) return "skoda";
 
-    status.textContent =
-      "Fehler beim Laden der Fahrzeuge.";
-
-  }
-
-}
-
-
-/* =========================
-   COLOR
-========================= */
-
-function getCarColor(color) {
-
-  const c =
-    (color || "")
-      .toLowerCase();
-
-
-  if (
-    c.includes("white") ||
-    c.includes("weiß")
-  ) {
-    return "#ffffff";
-  }
-
-
-  if (
-    c.includes("black") ||
-    c.includes("schwarz")
-  ) {
-    return "#171717";
-  }
-
-
-  if (
-    c.includes("red") ||
-    c.includes("rot")
-  ) {
-    return "#dc2626";
-  }
-
-
-  if (
-    c.includes("orange")
-  ) {
-    return "#f97316";
-  }
-
-
-  if (
-    c.includes("green") ||
-    c.includes("grün")
-  ) {
-    return "#16a34a";
-  }
-
-
-  if (
-    c.includes("blue") ||
-    c.includes("blau")
-  ) {
-    return "#2563eb";
-  }
-
-
-  if (
-    c.includes("gray") ||
-    c.includes("grey") ||
-    c.includes("grau")
-  ) {
-    return "#6b7280";
-  }
-
-
-  if (
-    c.includes("silver") ||
-    c.includes("silber")
-  ) {
-    return "#cbd5e1";
-  }
-
-
-  return "#ffffff";
-}
-
-
-/* =========================
-   MODEL TYPE
-========================= */
-
-function getVehicleType(model) {
-
-  const m =
-    (model || "")
-      .toLowerCase();
-
-
-  if (
-    m.includes("puma")
-  ) {
-    return "puma";
-  }
-
-
-  if (
-    m.includes("transporter")
-  ) {
-    return "transporter";
-  }
-
-
-  if (
-    m.includes("transit")
-  ) {
-    return "transit";
-  }
-
-
-  if (
-    m.includes("ranger")
-  ) {
-    return "ranger";
-  }
-
-
-  if (
-    m.includes("kuga")
-  ) {
-    return "kuga";
-  }
-
-
-  if (
-    m.includes("capri")
-  ) {
-    return "capri";
-  }
-
-
-  if (
-    m.includes("focus")
-  ) {
     return "focus";
   }
 
+  function getCarColor(color) {
+    const c = (color || "").toLowerCase();
 
-  if (
-    m.includes("opel")
-  ) {
-    return "opel";
+    if (c.includes("white") || c.includes("weiß")) return "#ffffff";
+    if (c.includes("black") || c.includes("schwarz")) return "#171717";
+    if (c.includes("red") || c.includes("rot")) return "#dc2626";
+    if (c.includes("orange")) return "#f97316";
+    if (c.includes("green") || c.includes("grün")) return "#16a34a";
+    if (c.includes("blue") || c.includes("blau")) return "#2563eb";
+
+    if (
+      c.includes("gray") ||
+      c.includes("grey") ||
+      c.includes("grau")
+    ) return "#6b7280";
+
+    if (c.includes("silver") || c.includes("silber")) {
+      return "#cbd5e1";
+    }
+
+    return "#ffffff";
   }
 
+  function carMatches(car) {
+    const q = $("search").value.trim().toLowerCase();
 
-  if (
-    m.includes("škoda") ||
-    m.includes("skoda")
-  ) {
-    return "skoda";
+    const text = [
+      car.vin5 || "",
+      car.fahrnummer || "",
+      car.model || ""
+    ].join(" ").toLowerCase();
+
+    if (q && !text.includes(q)) return false;
+
+    if (
+      $("modelFilter").value &&
+      car.model !== $("modelFilter").value
+    ) return false;
+
+    if (
+      $("colorFilter").value &&
+      car.color !== $("colorFilter").value
+    ) return false;
+
+    return true;
   }
 
+  function createCarGraphic(car) {
+    const shape = document.createElement("div");
 
-  return "focus";
-}
+    shape.className =
+      "carShape " + getVehicleType(car.model);
 
-
-/* =========================
-   FILTER
-========================= */
-
-function carMatches(car) {
-
-  const q =
-    search.value
-      .trim()
-      .toLowerCase();
-
-
-  const text =
-    `${car.vin5 || ""}
-     ${car.fahrnummer || ""}
-     ${car.model || ""}`
-      .toLowerCase();
-
-
-  if (
-    q &&
-    !text.includes(q)
-  ) {
-    return false;
-  }
-
-
-  if (
-    modelFilter.value &&
-    car.model !==
-      modelFilter.value
-  ) {
-    return false;
-  }
-
-
-  if (
-    colorFilter.value &&
-    car.color !==
-      colorFilter.value
-  ) {
-    return false;
-  }
-
-
-  return true;
-}
-
-
-/* =========================
-   CAR GRAPHIC
-========================= */
-
-function createCarGraphic(car) {
-
-  const shape =
-    document.createElement("div");
-
-
-  shape.className =
-    "carShape " +
-    getVehicleType(
-      car.model
+    shape.style.setProperty(
+      "--car-color",
+      getCarColor(car.color)
     );
 
+    const parts = [
+      "frontWindow",
+      "roof",
+      "rearWindow",
+      "wheel fl",
+      "wheel fr",
+      "wheel rl",
+      "wheel rr",
+      "headlight left",
+      "headlight right"
+    ];
 
-  shape.style.setProperty(
-    "--car-color",
-    getCarColor(car.color)
-  );
+    parts.forEach(className => {
+      const part = document.createElement("div");
+      part.className = className;
+      shape.appendChild(part);
+    });
 
+    return shape;
+  }
 
-  const frontWindow =
-    document.createElement("div");
+  /* КООРДИНАТЫ ОТНОСИТЕЛЬНО ФОТО */
+  function getMapPercent(clientX, clientY) {
+    const rect = $("parkingImage").getBoundingClientRect();
 
-  frontWindow.className =
-    "frontWindow";
+    let x = ((clientX - rect.left) / rect.width) * 100;
+    let y = ((clientY - rect.top) / rect.height) * 100;
 
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
 
-  const roof =
-    document.createElement("div");
+    return {
+      x: Number(x.toFixed(4)),
+      y: Number(y.toFixed(4))
+    };
+  }
 
-  roof.className =
-    "roof";
+  /* ОТОБРАЖЕНИЕ МАШИН */
+  function renderCars() {
+    markers.innerHTML = "";
+    let visibleCount = 0;
 
-
-  const rearWindow =
-    document.createElement("div");
-
-  rearWindow.className =
-    "rearWindow";
-
-
-  const wheelFL =
-    document.createElement("div");
-
-  wheelFL.className =
-    "wheel fl";
-
-
-  const wheelFR =
-    document.createElement("div");
-
-  wheelFR.className =
-    "wheel fr";
-
-
-  const wheelRL =
-    document.createElement("div");
-
-  wheelRL.className =
-    "wheel rl";
-
-
-  const wheelRR =
-    document.createElement("div");
-
-  wheelRR.className =
-    "wheel rr";
-
-
-  const lightLeft =
-    document.createElement("div");
-
-  lightLeft.className =
-    "headlight left";
-
-
-  const lightRight =
-    document.createElement("div");
-
-  lightRight.className =
-    "headlight right";
-
-
-  shape.appendChild(
-    frontWindow
-  );
-
-  shape.appendChild(
-    roof
-  );
-
-  shape.appendChild(
-    rearWindow
-  );
-
-  shape.appendChild(
-    wheelFL
-  );
-
-  shape.appendChild(
-    wheelFR
-  );
-
-  shape.appendChild(
-    wheelRL
-  );
-
-  shape.appendChild(
-    wheelRR
-  );
-
-  shape.appendChild(
-    lightLeft
-  );
-
-  shape.appendChild(
-    lightRight
-  );
-
-
-  return shape;
-}
-
-
-/* =========================
-   RENDER
-========================= */
-
-function renderCars() {
-
-  markers.innerHTML = "";
-
-
-  let visibleCount = 0;
-
-
-  cars.forEach(
-    car => {
-
-
+    cars.forEach(car => {
       if (
         car.position_x == null ||
         car.position_y == null
-      ) {
-        return;
+      ) return;
+
+      const marker = document.createElement("button");
+
+      marker.type = "button";
+      marker.className = "marker";
+
+      if (isAdmin()) {
+        marker.classList.add("admin");
       }
 
+      marker.style.left = car.position_x + "%";
+      marker.style.top = car.position_y + "%";
 
-      const marker =
-        document.createElement(
-          "button"
-        );
+      marker.appendChild(createCarGraphic(car));
 
+      const vin = document.createElement("span");
+      vin.className = "carVin";
+      vin.textContent = car.vin5 || "?";
+      marker.appendChild(vin);
 
-      marker.type =
-        "button";
+      marker.title = [
+        car.model || "",
+        car.vin5 || "",
+        car.fahrnummer || ""
+      ].filter(Boolean).join(" · ");
 
-
-      marker.className =
-        "marker";
-
-
-      marker.style.left =
-        car.position_x + "%";
-
-
-      marker.style.top =
-        car.position_y + "%";
-
-
-      const graphic =
-        createCarGraphic(car);
-
-
-      marker.appendChild(
-        graphic
-      );
-
-
-      const vin =
-        document.createElement(
-          "span"
-        );
-
-
-      vin.className =
-        "carVin";
-
-
-      vin.textContent =
-        car.vin5 || "?";
-
-
-      marker.appendChild(
-        vin
-      );
-
-
-      if (
-        !carMatches(car)
-      ) {
-
-        marker.classList.add(
-          "hidden"
-        );
-
-      }
-
-      else {
-
+      if (!carMatches(car)) {
+        marker.classList.add("hidden");
+      } else {
         visibleCount++;
-
       }
 
+      if (isAdmin()) {
+        enableDrag(marker, car);
+      }
 
-      enableDrag(
-        marker,
-        car
-      );
-
-
-      marker.addEventListener(
-        "click",
-        () => {
-
-          if (!dragged) {
-
-            showCar(car);
-
-          }
-
+      marker.addEventListener("click", () => {
+        if (!dragging) {
+          showCar(car);
         }
-      );
-
-
-      markers.appendChild(
-        marker
-      );
-
-    }
-  );
-
-
-  status.textContent =
-    visibleCount +
-    " Fahrzeug" +
-    (
-      visibleCount === 1
-        ? ""
-        : "e"
-    ) +
-    " angezeigt";
-
-}
-
-
-/* =========================
-   DRAG
-========================= */
-
-function enableDrag(
-  marker,
-  car
-) {
-
-  let startX = 0;
-
-  let startY = 0;
-
-
-  marker.addEventListener(
-    "pointerdown",
-    event => {
-
-
-      if (placementMode) {
-        return;
-      }
-
-
-      dragged =
-        false;
-
-
-      startX =
-        event.clientX;
-
-
-      startY =
-        event.clientY;
-
-
-      marker.setPointerCapture(
-        event.pointerId
-      );
-
-    }
-  );
-
-
-  marker.addEventListener(
-    "pointermove",
-    event => {
-
-
-      if (
-        !marker.hasPointerCapture(
-          event.pointerId
-        )
-      ) {
-        return;
-      }
-
-
-      const distance =
-        Math.hypot(
-          event.clientX -
-          startX,
-
-          event.clientY -
-          startY
-        );
-
-
-      if (
-        distance > 4
-      ) {
-        dragged = true;
-      }
-
-
-      if (!dragged) {
-        return;
-      }
-
-
-      const pos =
-        getMapPercent(
-          event.clientX,
-          event.clientY
-        );
-
-
-      marker.style.left =
-        pos.x + "%";
-
-
-      marker.style.top =
-        pos.y + "%";
-
-    }
-  );
-
-
-  marker.addEventListener(
-    "pointerup",
-    async event => {
-
-
-      if (
-        !marker.hasPointerCapture(
-          event.pointerId
-        )
-      ) {
-        return;
-      }
-
-
-      marker.releasePointerCapture(
-        event.pointerId
-      );
-
-
-      if (!dragged) {
-        return;
-      }
-
-
-      const pos =
-        getMapPercent(
-          event.clientX,
-          event.clientY
-        );
-
-
-      try {
-
-        status.textContent =
-          "Position wird gespeichert...";
-
-
-        await apiRequest(
-          `cars?id=eq.${car.id}`,
-          {
-
-            method:
-              "PATCH",
-
-            headers: {
-
-              Prefer:
-                "return=minimal"
-
-            },
-
-            body:
-              JSON.stringify({
-
-                position_x:
-                  pos.x,
-
-                position_y:
-                  pos.y
-
-              })
-
-          }
-        );
-
-
-        car.position_x =
-          pos.x;
-
-
-        car.position_y =
-          pos.y;
-
-
-        status.textContent =
-          "Position gespeichert.";
-
-
-        setTimeout(
-          renderCars,
-          250
-        );
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        alert(
-          "Position konnte nicht gespeichert werden."
-        );
-
-        renderCars();
-
-      }
-
-    }
-  );
-
-}
-/* =========================
-   MAP POSITION
-========================= */
-
-function getMapPercent(
-  clientX,
-  clientY
-) {
-
-  const image =
-    document.getElementById(
-      "parkingImage"
+      });
+
+      markers.appendChild(marker);
+    });
+
+    setStatus(
+      visibleCount +
+      " Fahrzeug" +
+      (visibleCount === 1 ? "" : "e") +
+      " angezeigt"
     );
-
-  const rect =
-    image.getBoundingClientRect();
-
-
-  let x =
-    (
-      (
-        clientX -
-        rect.left
-      )
-      /
-      rect.width
-    )
-    *
-    100;
-
-
-  let y =
-    (
-      (
-        clientY -
-        rect.top
-      )
-      /
-      rect.height
-    )
-    *
-    100;
-
-
-  x =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        x
-      )
-    );
-
-
-  y =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        y
-      )
-    );
-
-
-  return {
-
-    x:
-      Number(
-        x.toFixed(4)
-      ),
-
-    y:
-      Number(
-        y.toFixed(4)
-      )
-
-  };
-
-}
-
-
-
-
-/* =========================
-   OPEN EDIT
-========================= */
-
-function showCar(car) {
-
-  selectedCar =
-    car;
-
-
-  document.getElementById(
-    "cardTitle"
-  ).textContent =
-    car.model ||
-    "Fahrzeug bearbeiten";
-
-
-  document.getElementById(
-    "editVin"
-  ).value =
-    car.vin5 || "";
-
-
-  document.getElementById(
-    "editFahrnummer"
-  ).value =
-    car.fahrnummer || "";
-
-
-  setSelectValue(
-    document.getElementById(
-      "editModel"
-    ),
-    car.model
-  );
-
-
-  setSelectValue(
-    document.getElementById(
-      "editColor"
-    ),
-    car.color
-  );
-
-
-  document.getElementById(
-    "editMobileUrl"
-  ).value =
-    car.mobile_url || "";
-
-
-  updateMobileButton(
-    car.mobile_url
-  );
-
-
-  card.style.display =
-    "block";
-
-}
-
-
-/* =========================
-   SELECT VALUE
-========================= */
-
-function setSelectValue(
-  select,
-  value
-) {
-
-  const exists =
-    Array
-      .from(select.options)
-      .some(
-        option =>
-          option.value === value
-      );
-
-
-  if (exists) {
-
-    select.value =
-      value;
-
   }
 
-}
+  /* ПЕРЕМЕЩЕНИЕ: ТОЛЬКО ПОСЛЕ ВХОДА */
+  function enableDrag(marker, car) {
+    let startX = 0;
+    let startY = 0;
+    let moved = false;
 
+    marker.addEventListener("pointerdown", event => {
+      if (!isAdmin() || placementMode) return;
 
-/* =========================
-   MOBILE BUTTON
-========================= */
+      dragging = false;
+      moved = false;
 
-function updateMobileButton(url) {
+      startX = event.clientX;
+      startY = event.clientY;
 
-  const button =
-    document.getElementById(
-      "mobileButton"
-    );
+      marker.setPointerCapture(event.pointerId);
+    });
 
+    marker.addEventListener("pointermove", event => {
+      if (!marker.hasPointerCapture(event.pointerId)) {
+        return;
+      }
 
-  if (url) {
-
-    button.href =
-      url;
-
-    button.style.display =
-      "block";
-
-  }
-
-  else {
-
-    button.style.display =
-      "none";
-
-  }
-
-}
-
-
-/* =========================
-   SAVE EDIT
-========================= */
-
-document.getElementById(
-  "saveCarButton"
-).addEventListener(
-  "click",
-  async () => {
-
-
-    if (!selectedCar) {
-      return;
-    }
-
-
-    const vin =
-      document.getElementById(
-        "editVin"
-      )
-      .value
-      .trim();
-
-
-    const fahrnummer =
-      document.getElementById(
-        "editFahrnummer"
-      )
-      .value
-      .trim();
-
-
-    const model =
-      document.getElementById(
-        "editModel"
-      ).value;
-
-
-    const color =
-      document.getElementById(
-        "editColor"
-      ).value;
-
-
-    const mobileUrl =
-      document.getElementById(
-        "editMobileUrl"
-      )
-      .value
-      .trim();
-
-
-    if (
-      !vin ||
-      !fahrnummer
-    ) {
-
-      alert(
-        "Bitte VIN und Fahrzeugnummer eingeben."
+      const distance = Math.hypot(
+        event.clientX - startX,
+        event.clientY - startY
       );
 
-      return;
+      if (distance > 4) {
+        moved = true;
+        dragging = true;
+      }
 
-    }
+      if (!moved) return;
 
-
-    try {
-
-      status.textContent =
-        "Änderungen werden gespeichert...";
-
-
-      await apiRequest(
-        `cars?id=eq.${selectedCar.id}`,
-        {
-
-          method:
-            "PATCH",
-
-          headers: {
-
-            Prefer:
-              "return=minimal"
-
-          },
-
-          body:
-            JSON.stringify({
-
-              vin5:
-                vin,
-
-              fahrnummer:
-                fahrnummer,
-
-              model:
-                model,
-
-              color:
-                color,
-
-              mobile_url:
-                mobileUrl
-
-            })
-
-        }
-      );
-
-
-      selectedCar.vin5 =
-        vin;
-
-
-      selectedCar.fahrnummer =
-        fahrnummer;
-
-
-      selectedCar.model =
-        model;
-
-
-      selectedCar.color =
-        color;
-
-
-      selectedCar.mobile_url =
-        mobileUrl;
-
-
-      document.getElementById(
-        "cardTitle"
-      ).textContent =
-        model;
-
-
-      updateMobileButton(
-        mobileUrl
-      );
-
-
-      renderCars();
-
-
-      status.textContent =
-        "Änderungen gespeichert.";
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-
-      alert(
-        "Änderungen konnten nicht gespeichert werden."
-      );
-
-    }
-
-  }
-);
-
-
-/* =========================
-   DELETE
-========================= */
-
-document.getElementById(
-  "deleteCarButton"
-).addEventListener(
-  "click",
-  async () => {
-
-
-    if (!selectedCar) {
-      return;
-    }
-
-
-    const confirmed =
-      confirm(
-        `Fahrzeug ${selectedCar.vin5 || ""} wirklich löschen?`
-      );
-
-
-    if (!confirmed) {
-      return;
-    }
-
-
-    try {
-
-      status.textContent =
-        "Fahrzeug wird gelöscht...";
-
-
-      const id =
-        selectedCar.id;
-
-
-      await apiRequest(
-        `cars?id=eq.${id}`,
-        {
-
-          method:
-            "DELETE",
-
-          headers: {
-
-            Prefer:
-              "return=minimal"
-
-          }
-
-        }
-      );
-
-
-      cars =
-        cars.filter(
-          car =>
-            car.id !== id
-        );
-
-
-      selectedCar =
-        null;
-
-
-      card.style.display =
-        "none";
-
-
-      renderCars();
-
-
-      status.textContent =
-        "Fahrzeug gelöscht.";
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-
-      alert(
-        "Fahrzeug konnte nicht gelöscht werden."
-      );
-
-    }
-
-  }
-);
-
-
-/* =========================
-   ADD PANEL
-========================= */
-
-document.getElementById(
-  "addCarButton"
-).addEventListener(
-  "click",
-  () => {
-
-
-    card.style.display =
-      "none";
-
-
-    selectedCar =
-      null;
-
-
-    addPanel.style.display =
-      "block";
-
-  }
-);
-
-
-/* =========================
-   CANCEL ADD
-========================= */
-
-document.getElementById(
-  "cancelAddButton"
-).addEventListener(
-  "click",
-  () => {
-
-
-    addPanel.style.display =
-      "none";
-
-
-    placementMode =
-      false;
-
-
-    pendingCar =
-      null;
-
-
-    placementMessage.style.display =
-      "none";
-
-  }
-);
-
-
-/* =========================
-   START PLACEMENT
-========================= */
-
-document.getElementById(
-  "placeCarButton"
-).addEventListener(
-  "click",
-  () => {
-
-
-    const vin =
-      document.getElementById(
-        "newVin"
-      )
-      .value
-      .trim();
-
-
-    const fahrnummer =
-      document.getElementById(
-        "newFahrnummer"
-      )
-      .value
-      .trim();
-
-
-    if (
-      !vin ||
-      !fahrnummer
-    ) {
-
-      alert(
-        "Bitte VIN und Fahrzeugnummer eingeben."
-      );
-
-      return;
-
-    }
-
-
-    pendingCar = {
-
-      vin5:
-        vin,
-
-      fahrnummer:
-        fahrnummer,
-
-      model:
-        document.getElementById(
-          "newModel"
-        ).value,
-
-      color:
-        document.getElementById(
-          "newColor"
-        ).value,
-
-      mobile_url:
-        document.getElementById(
-          "newMobileUrl"
-        )
-        .value
-        .trim()
-
-    };
-
-
-    placementMode =
-      true;
-
-
-    addPanel.style.display =
-      "none";
-
-
-    placementMessage.style.display =
-      "block";
-
-
-    placementMessage.textContent =
-      "Klicke jetzt auf die gewünschte Position auf dem Parkplatz.";
-
-  }
-);
-
-
-/* =========================
-   PLACE CAR
-========================= */
-
-mapWrapper.addEventListener(
-  "click",
-  async event => {
-
-
-    if (!placementMode) {
-      return;
-    }
-
-
-    if (
-      event.target.closest(
-        ".marker"
-      )
-    ) {
-      return;
-    }
-
-
-    const pos =
-      getMapPercent(
+      const pos = getMapPercent(
         event.clientX,
         event.clientY
       );
 
+      marker.style.left = pos.x + "%";
+      marker.style.top = pos.y + "%";
+    });
 
-    const newCar = {
+    marker.addEventListener("pointerup", async event => {
+      if (!marker.hasPointerCapture(event.pointerId)) {
+        return;
+      }
 
-      ...pendingCar,
+      marker.releasePointerCapture(event.pointerId);
 
-      position_x:
-        pos.x,
+      if (!moved) return;
 
-      position_y:
-        pos.y
+      const pos = getMapPercent(
+        event.clientX,
+        event.clientY
+      );
 
-    };
+      try {
+        setStatus("Position wird gespeichert...");
 
-
-    try {
-
-      placementMessage.textContent =
-        "Fahrzeug wird gespeichert...";
-
-
-      const response =
         await apiRequest(
-          "cars",
+          `cars?id=eq.${car.id}`,
           {
-
-            method:
-              "POST",
-
+            method: "PATCH",
             headers: {
-
-              Prefer:
-                "return=representation"
-
+              Prefer: "return=minimal"
             },
-
-            body:
-              JSON.stringify(
-                newCar
-              )
-
+            body: JSON.stringify({
+              position_x: pos.x,
+              position_y: pos.y
+            })
           }
         );
 
+        car.position_x = pos.x;
+        car.position_y = pos.y;
 
-      const created =
-        await response.json();
+        setStatus("Position gespeichert.");
+      } catch (error) {
+        console.error(error);
+        alert("Position konnte nicht gespeichert werden.");
+      } finally {
+        renderCars();
 
-
-      if (
-        created[0]
-      ) {
-
-        cars.push(
-          created[0]
-        );
-
+        /* Не открываем карточку после перетаскивания */
+        setTimeout(() => {
+          dragging = false;
+        }, 100);
       }
+    });
 
-
-      placementMode =
-        false;
-
-
-      pendingCar =
-        null;
-
-
-      placementMessage.style.display =
-        "none";
-
-
-      clearAddForm();
-
-
+    marker.addEventListener("pointercancel", () => {
+      dragging = false;
       renderCars();
+    });
+  }
 
+  /* КАРТОЧКА МАШИНЫ */
+  function setSelectValue(select, value) {
+    const exists = Array.from(select.options)
+      .some(option => option.value === value);
+
+    if (!exists && value) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      select.appendChild(option);
     }
 
-    catch (error) {
+    select.value = value || select.options[0]?.value || "";
+  }
 
-      console.error(error);
+  function updateMobileButton(url) {
+    const button = $("mobileButton");
 
+    if (
+      url &&
+      /^https?:\/\//i.test(url)
+    ) {
+      button.href = url;
+      button.style.display = "block";
+    } else {
+      button.removeAttribute("href");
+      button.style.display = "none";
+    }
+  }
 
-      alert(
-        "Fahrzeug konnte nicht gespeichert werden."
+  function showCar(car) {
+    selectedCar = car;
+
+    $("cardTitle").textContent =
+      car.model || "Fahrzeug";
+
+    $("editVin").value = car.vin5 || "";
+    $("editFahrnummer").value = car.fahrnummer || "";
+
+    setSelectValue($("editModel"), car.model);
+    setSelectValue($("editColor"), car.color);
+
+    $("editMobileUrl").value = car.mobile_url || "";
+
+    const admin = isAdmin();
+
+    [
+      "editVin",
+      "editFahrnummer",
+      "editModel",
+      "editColor",
+      "editMobileUrl"
+    ].forEach(id => {
+      $(id).disabled = !admin;
+    });
+
+    $("saveCarButton").style.display =
+      admin ? "block" : "none";
+
+    $("deleteCarButton").style.display =
+      admin ? "block" : "none";
+
+    updateMobileButton(car.mobile_url);
+
+    addPanel.style.display = "none";
+    card.style.display = "block";
+  }
+
+  $("closeCard").addEventListener("click", () => {
+    selectedCar = null;
+    card.style.display = "none";
+  });
+
+  /* СОХРАНИТЬ ИЗМЕНЕНИЯ */
+  $("saveCarButton").addEventListener("click", async () => {
+    if (!isAdmin() || !selectedCar) return;
+
+    const vin = $("editVin").value.trim();
+    const fahrnummer = $("editFahrnummer").value.trim();
+    const model = $("editModel").value;
+    const color = $("editColor").value;
+    const mobileUrl = $("editMobileUrl").value.trim();
+
+    if (!vin || !fahrnummer) {
+      alert("Bitte VIN und Fahrzeugnummer eingeben.");
+      return;
+    }
+
+    $("saveCarButton").disabled = true;
+
+    try {
+      setStatus("Änderungen werden gespeichert...");
+
+      await apiRequest(
+        `cars?id=eq.${selectedCar.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Prefer: "return=minimal"
+          },
+          body: JSON.stringify({
+            vin5: vin,
+            fahrnummer,
+            model,
+            color,
+            mobile_url: mobileUrl
+          })
+        }
       );
 
+      Object.assign(selectedCar, {
+        vin5: vin,
+        fahrnummer,
+        model,
+        color,
+        mobile_url: mobileUrl
+      });
 
-      placementMessage.textContent =
-        "Fehler beim Speichern.";
+      $("cardTitle").textContent = model;
+      updateMobileButton(mobileUrl);
 
+      renderCars();
+      setStatus("Änderungen gespeichert.");
+    } catch (error) {
+      console.error(error);
+      alert("Änderungen konnten nicht gespeichert werden.");
+    } finally {
+      $("saveCarButton").disabled = false;
+    }
+  });
+
+  /* УДАЛЕНИЕ */
+  $("deleteCarButton").addEventListener("click", async () => {
+    if (!isAdmin() || !selectedCar) return;
+
+    const confirmed = confirm(
+      `Fahrzeug ${selectedCar.vin5 || ""} wirklich löschen?`
+    );
+
+    if (!confirmed) return;
+
+    const id = selectedCar.id;
+
+    try {
+      setStatus("Fahrzeug wird gelöscht...");
+
+      await apiRequest(
+        `cars?id=eq.${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Prefer: "return=minimal"
+          }
+        }
+      );
+
+      cars = cars.filter(car => car.id !== id);
+
+      selectedCar = null;
+      card.style.display = "none";
+
+      renderCars();
+      setStatus("Fahrzeug gelöscht.");
+    } catch (error) {
+      console.error(error);
+      alert("Fahrzeug konnte nicht gelöscht werden.");
+    }
+  });
+
+  /* ДОБАВЛЕНИЕ */
+  $("addCarButton").addEventListener("click", () => {
+    if (!isAdmin()) return;
+
+    selectedCar = null;
+    closePanels();
+    addPanel.style.display = "block";
+  });
+
+  $("cancelAddButton").addEventListener("click", () => {
+    addPanel.style.display = "none";
+    placementMode = false;
+    pendingCar = null;
+    $("placementMessage").style.display = "none";
+  });
+
+  $("placeCarButton").addEventListener("click", () => {
+    if (!isAdmin()) return;
+
+    const vin = $("newVin").value.trim();
+    const fahrnummer = $("newFahrnummer").value.trim();
+
+    if (!vin || !fahrnummer) {
+      alert("Bitte VIN und Fahrzeugnummer eingeben.");
+      return;
     }
 
+    pendingCar = {
+      vin5: vin,
+      fahrnummer,
+      model: $("newModel").value,
+      color: $("newColor").value,
+      mobile_url: $("newMobileUrl").value.trim()
+    };
+
+    placementMode = true;
+    addPanel.style.display = "none";
+
+    $("placementMessage").textContent =
+      "Klicke jetzt auf die gewünschte Position auf dem Parkplatz.";
+
+    $("placementMessage").style.display = "block";
+  });
+
+  mapWrapper.addEventListener("click", async event => {
+    if (!isAdmin() || !placementMode || !pendingCar) {
+      return;
+    }
+
+    if (event.target.closest(".marker")) {
+      return;
+    }
+
+    const pos = getMapPercent(
+      event.clientX,
+      event.clientY
+    );
+
+    const newCar = {
+      ...pendingCar,
+      position_x: pos.x,
+      position_y: pos.y
+    };
+
+    placementMode = false;
+
+    try {
+      $("placementMessage").textContent =
+        "Fahrzeug wird gespeichert...";
+
+      const response = await apiRequest(
+        "cars",
+        {
+          method: "POST",
+          headers: {
+            Prefer: "return=representation"
+          },
+          body: JSON.stringify(newCar)
+        }
+      );
+
+      const created = await response.json();
+
+      if (created[0]) {
+        cars.push(created[0]);
+      }
+
+      pendingCar = null;
+      $("placementMessage").style.display = "none";
+
+      $("newVin").value = "";
+      $("newFahrnummer").value = "";
+      $("newMobileUrl").value = "";
+
+      renderCars();
+    } catch (error) {
+      console.error(error);
+
+      alert("Fahrzeug konnte nicht gespeichert werden.");
+
+      placementMode = true;
+      $("placementMessage").textContent =
+        "Fehler beim Speichern. Bitte erneut auf den Parkplatz klicken.";
+    }
+  });
+
+  /* ФИЛЬТРЫ */
+  $("search").addEventListener("input", renderCars);
+  $("modelFilter").addEventListener("change", renderCars);
+  $("colorFilter").addEventListener("change", renderCars);
+
+  /* ЗАПУСК */
+  async function start() {
+    await restoreSession();
+    await loadCars();
   }
-);
 
-
-/* =========================
-   CLEAR FORM
-========================= */
-
-function clearAddForm() {
-
-  document.getElementById(
-    "newVin"
-  ).value = "";
-
-
-  document.getElementById(
-    "newFahrnummer"
-  ).value = "";
-
-
-  document.getElementById(
-    "newMobileUrl"
-  ).value = "";
-
-}
-
-
-/* =========================
-   CLOSE CARD
-========================= */
-
-document.getElementById(
-  "closeCard"
-).addEventListener(
-  "click",
-  () => {
-
-
-    selectedCar =
-      null;
-
-
-    card.style.display =
-      "none";
-
-  }
-);
-
-
-/* =========================
-   FILTER EVENTS
-========================= */
-
-search.addEventListener(
-  "input",
-  renderCars
-);
-
-
-modelFilter.addEventListener(
-  "change",
-  renderCars
-);
-
-
-colorFilter.addEventListener(
-  "change",
-  renderCars
-);
-
-
-/* =========================
-   START
-========================= */
-
-loadCars();
-
+  start();
 </script>
 
 </body>
