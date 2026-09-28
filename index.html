@@ -141,7 +141,42 @@
 
     .marker.admin { cursor: grab; }
     .marker.admin:active { cursor: grabbing; }
+/* УВЕЛИЧЕНИЕ МАШИНЫ ПРИ НАВЕДЕНИИ МЫШИ */
+@media (hover: hover) and (pointer: fine) {
 
+  .marker {
+    transition: z-index 0s;
+  }
+
+  .marker:hover {
+    z-index: 1000;
+  }
+
+  .marker:hover .carShape {
+    transform: translate(-50%, -50%) scale(2);
+    box-shadow: 0 4px 12px rgba(0,0,0,.55);
+  }
+
+  .marker:hover .carVin {
+    top: calc(50% + 43px);
+    font-size: 14px;
+    line-height: 18px;
+    padding: 3px 6px;
+    min-width: 55px;
+    border: 2px solid #111;
+    z-index: 1001;
+  }
+
+  .carShape,
+  .carVin {
+    transition:
+      transform 0.15s ease,
+      top 0.15s ease,
+      font-size 0.15s ease,
+      line-height 0.15s ease,
+      padding 0.15s ease;
+  }
+}
     .marker.hidden {
       opacity: 0.12;
     }
