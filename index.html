@@ -141,61 +141,58 @@
 
     .marker.admin { cursor: grab; }
     .marker.admin:active { cursor: grabbing; }
-/* УВЕЛИЧЕНИЕ МАШИНЫ ПРИ НАВЕДЕНИИ МЫШИ */
-@media (hover: hover) and (pointer: fine) {
 
-  .marker {
-    transition: z-index 0s;
-  }
+    /* Увеличение машины и VIN при наведении мыши */
+    @media (hover: hover) and (pointer: fine) {
+      .marker:hover {
+        z-index: 1000;
+      }
 
-  .marker:hover {
-    z-index: 1000;
-  }
+      .marker:hover .carShape {
+        transform: translate(-50%, -50%) scale(2);
+        box-shadow: 0 4px 12px rgba(0,0,0,.55);
+      }
 
-  .marker:hover .carShape {
-    transform: translate(-50%, -50%) scale(2);
-    box-shadow: 0 4px 12px rgba(0,0,0,.55);
-  }
+      .marker:hover .carVin {
+        top: calc(50% + 43px);
+        font-size: 14px;
+        line-height: 18px;
+        padding: 3px 6px;
+        min-width: 55px;
+        border: 2px solid #111;
+        z-index: 1001;
+      }
 
-  .marker:hover .carVin {
-    top: calc(50% + 43px);
-    font-size: 14px;
-    line-height: 18px;
-    padding: 3px 6px;
-    min-width: 55px;
-    border: 2px solid #111;
-    z-index: 1001;
-  }
+      .carShape,
+      .carVin {
+        transition:
+          transform 0.15s ease,
+          top 0.15s ease,
+          font-size 0.15s ease,
+          line-height 0.15s ease,
+          padding 0.15s ease;
+      }
+    }
 
-  .carShape,
-  .carVin {
-    transition:
-      transform 0.15s ease,
-      top 0.15s ease,
-      font-size 0.15s ease,
-      line-height 0.15s ease,
-      padding 0.15s ease;
-  }
-  }
-}
+    /* Во время перетаскивания машина сразу обычного размера */
+    .marker.dragging .carShape {
+      transform: translate(-50%, -50%) scale(1) !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,.45) !important;
+    }
 
-/* При захвате машины возвращаем обычный размер */
-.marker.admin:active .carShape {
-  transform: translate(-50%, -50%) scale(1) !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,.45) !important;
-}
+    .marker.dragging .carVin {
+      top: calc(50% + 23px) !important;
+      font-size: 7px !important;
+      line-height: 9px !important;
+      padding: 1px 3px !important;
+      min-width: 31px !important;
+      border: 1px solid #333 !important;
+    }
 
-.marker.admin:active .carVin {
-  top: calc(50% + 23px) !important;
-  font-size: 7px !important;
-  line-height: 9px !important;
-  padding: 1px 3px !important;
-  min-width: 31px !important;
-  border: 1px solid #333 !important;
-}
     .marker.hidden {
-  opacity: 0.12;
-}
+      opacity: 0.12;
+    }
+
     .carShape {
       position: absolute;
       left: 50%;
@@ -1348,6 +1345,7 @@
       if (distance > 4) {
         moved = true;
         dragging = true;
+        marker.classList.add("dragging");
       }
 
       if (!moved) return;
@@ -1367,6 +1365,7 @@
       ) return;
 
       marker.releasePointerCapture(event.pointerId);
+      marker.classList.remove("dragging");
 
       if (!moved) {
         dragInProgress = false;
@@ -1423,6 +1422,7 @@
     });
 
     marker.addEventListener("pointercancel", () => {
+      marker.classList.remove("dragging");
       dragInProgress = false;
       dragging = false;
       renderCars();
