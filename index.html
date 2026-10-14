@@ -733,6 +733,7 @@
   <button id="batteryButton" class="primaryButton fullButton" type="button">🔋 Batterie / Verlauf</button>
   <button id="soldCarButton" class="fullButton" type="button">Verkauft · ins Archiv</button>
   <button id="departedCarButton" class="fullButton" type="button">Abgefahren · ins Archiv</button>
+  <button id="restoreCarButton" class="primaryButton fullButton" type="button" style="display:none">↩ Zurück auf Parkplatz · Вернуть на парковку</button>
   <button
     id="deleteCarButton"
     class="dangerButton fullButton"
@@ -1288,6 +1289,33 @@
   }
   $("soldCarButton").onclick = () => setYardStatus("sold");
   $("departedCarButton").onclick = () => setYardStatus("departed");
+  $("restoreCarButton").onclick = async () => {
+    if (!isAdmin() || !selectedCar || (selectedCar.yard_status || "on_site") === "on_site") return;
+    const carId = selectedCar.id;
+    if (!confirm("Fahrzeug zurück auf den Parkplatz holen? Die gesamte Batteriehistorie bleibt erhalten.")) return;
+    savingInProgress = true;
+    $("restoreCarButton").disabled = true;
+    try {
+      await apiRequest(`cars?id=eq.${carId}`, {
+        method: "PATCH",
+        headers: {Prefer: "return=minimal"},
+        body: JSON.stringify({yard_status: "on_site", sold_at: null})
+      });
+      selectedCar.yard_status = "on_site";
+      selectedCar.sold_at = null;
+      lastCarsSnapshot = "";
+      card.style.display = "none";
+      renderCars();
+      alert("Fahrzeug ist wieder auf dem Parkplatz. Bitte Position auf der Karte prüfen und bei Bedarf verschieben. Batteriehistorie bleibt erhalten.");
+    } catch (error) {
+      console.error(error);
+      alert("Rückkehr konnte nicht gespeichert werden: " + error.message);
+    } finally {
+      savingInProgress = false;
+      $("restoreCarButton").disabled = false;
+      await loadCars(true);
+    }
+  };
   $("batteryButton").onclick = () => { if (selectedCar) openBattery(selectedCar); };
 
   /* МОДЕЛИ И ЦВЕТА */
@@ -1706,6 +1734,7 @@
     $("batteryButton").style.display = admin ? "block" : "none";
     $("soldCarButton").style.display = admin && (car.yard_status || "on_site") === "on_site" ? "block" : "none";
     $("departedCarButton").style.display = admin && (car.yard_status || "on_site") === "on_site" ? "block" : "none";
+    $("restoreCarButton").style.display = admin && (car.yard_status || "on_site") !== "on_site" ? "block" : "none";
 
     updateMobileButton(car.mobile_url);
     $("cardTitle").textContent = (car.model || "Fahrzeug") + ((car.yard_status || "on_site") === "on_site" ? "" : " · Archiv");
