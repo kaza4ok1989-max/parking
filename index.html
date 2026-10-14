@@ -375,6 +375,18 @@
       box-shadow: 0 1px 3px rgba(0,0,0,.3);
     }
 
+    .batteryDot { position:absolute; left:calc(50% + 13px); top:calc(50% - 19px); border:1px solid #fff; border-radius:50%; width:16px; height:16px; font-size:11px; font-weight:bold; line-height:14px; text-align:center; color:white; background:#64748b; z-index:8; pointer-events:none; }
+    .batteryDot.ok { background:#16a34a; }
+    .batteryDot.due { background:#d97706; }
+    .batteryDot.overdue, .batteryDot.charge, .batteryDot.replace { background:#dc2626; }
+    .batteryDot.none { background:#64748b; }
+    .batteryInfo { background:#f1f5f9; border-radius:8px; padding:10px; margin:10px 0; font-size:14px; }
+    .batteryHistory { max-height:200px; overflow:auto; border:1px solid #cbd5e1; border-radius:8px; }
+    .batteryEntry { padding:9px; border-bottom:1px solid #e2e8f0; font-size:13px; white-space:pre-line; }
+    .batteryEntry:last-child { border:0; }
+    .batterySummary { display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin:8px 0; }
+    .batterySummary button { min-height:34px; font-size:13px; }
+    .archiveItem { display:block; width:100%; margin:5px 0; text-align:left; background:white; }
     .panel {
       display: none;
       position: fixed;
@@ -512,6 +524,15 @@
       <option value="Silver">Silber</option>
     </select>
 
+    <select id="batteryFilter" style="display:none" aria-label="Batteriestatus">
+      <option value="">Alle Batterien</option>
+      <option value="due">Prüfung heute / bald</option>
+      <option value="overdue">Prüfung überfällig</option>
+      <option value="charge">Laden erforderlich</option>
+      <option value="replace">Ersetzen</option>
+      <option value="none">Keine Daten</option>
+    </select>
+    <button id="archiveButton" type="button" style="display:none">Archiv</button>
     <button id="addCarButton" type="button">
       + Fahrzeug hinzufügen
     </button>
@@ -531,6 +552,7 @@
 <main>
   <div id="status">Fahrzeuge werden geladen...</div>
 
+  <div id="batterySummary" class="batterySummary" style="display:none"></div>
   <div id="placementMessage">
     Klicke jetzt auf die gewünschte Position auf dem Parkplatz.
   </div>
@@ -586,8 +608,9 @@
     <input id="newVin" type="text" placeholder="z.B. 02236">
   </div>
 
-  <div class="formRow">
-    <label for="newFahrnummer">Fahrzeugnummer</label>
+    <div class="formRow"><label for="newVinFull">Vollständige VIN (optional, 17 Zeichen)</label><input id="newVinFull" type="text" maxlength="17"></div>
+    <div class="formRow">
+      <label for="newFahrnummer">Fahrzeugnummer</label>
     <input id="newFahrnummer" type="text" placeholder="z.B. TZ-B504">
   </div>
 
@@ -645,8 +668,12 @@
     <input id="editVin" type="text">
   </div>
 
-  <div class="formRow">
-    <label for="editFahrnummer">Fahrzeugnummer</label>
+    <div class="formRow">
+      <label for="editVinFull">Vollständige VIN (17 Zeichen, optional)</label>
+      <input id="editVinFull" type="text" maxlength="17" placeholder="WF0...">
+    </div>
+    <div class="formRow">
+      <label for="editFahrnummer">Fahrzeugnummer</label>
     <input id="editFahrnummer" type="text">
   </div>
 
@@ -703,15 +730,41 @@
     Mobile.de öffnen
   </a>
 
+  <button id="batteryButton" class="primaryButton fullButton" type="button">🔋 Batterie / Verlauf</button>
+  <button id="soldCarButton" class="fullButton" type="button">Verkauft · ins Archiv</button>
+  <button id="departedCarButton" class="fullButton" type="button">Abgefahren · ins Archiv</button>
   <button
     id="deleteCarButton"
     class="dangerButton fullButton"
     type="button"
   >
-    Fahrzeug löschen
+    Fahrzeug endgültig löschen (nur ohne Batteriehistorie)
   </button>
 </div>
 
+<!-- BATTERIE / ARCHIV -->
+<div id="batteryPanel" class="panel" style="top:35px;max-width:540px">
+  <button id="closeBattery" class="closeButton" type="button">×</button>
+  <h2 id="batteryTitle">🔋 Batterie</h2>
+  <div id="batteryCurrent" class="batteryInfo"></div>
+  <h3>Prüfung / Ladung erfassen</h3>
+  <div id="batteryForm">
+    <div class="formRow"><label for="batteryDate">Datum</label><input type="date" id="batteryDate"></div>
+    <div class="formRow"><label for="batteryEvent">Vorgang</label><select id="batteryEvent"><option value="check">Prüfung</option><option value="charge">Ladung</option><option value="check_and_charge">Prüfung und Ladung</option></select></div>
+    <div class="formRow"><label for="batteryVoltage">Ruhespannung (V)</label><input type="number" id="batteryVoltage" min="0" max="20" step="0.01" placeholder="12.60"></div>
+    <div class="formRow"><label for="batteryTester">Testergebnis</label><select id="batteryTester"><option value="">Nicht angegeben</option><option value="OK">OK</option><option value="Nachladen">Nachladen</option><option value="Ersetzen">Ersetzen</option><option value="Unbekannt">Unbekannt</option></select></div>
+    <div class="formRow"><label for="batteryNext">Nächste Prüfung (bei Prüfung +1 Monat)</label><input type="date" id="batteryNext"></div>
+    <div class="formRow"><label for="batteryNotes">Notizen</label><input id="batteryNotes" type="text" maxlength="1000" placeholder="Bemerkungen"></div>
+    <button id="saveBattery" class="primaryButton fullButton" type="button">Eintrag speichern</button>
+  </div>
+  <h3>Gesamter Verlauf</h3><div id="batteryHistory" class="batteryHistory"></div>
+</div>
+<div id="archivePanel" class="panel" style="top:35px;max-width:540px">
+  <button id="closeArchive" class="closeButton" type="button">×</button>
+  <h2>Fahrzeugarchiv</h2>
+  <div class="formRow"><label for="archiveSearch">VIN / Fahrzeugnummer suchen</label><input id="archiveSearch" type="search" placeholder="VIN oder Fahrzeugnummer"></div>
+  <div id="archiveList"></div>
+</div>
 <script>
   /* НАСТРОЙКИ SUPABASE */
   const SUPABASE_URL =
@@ -729,6 +782,9 @@
   const AUTO_REFRESH_MS = 3000;
 
   let cars = [];
+  let batteryChecks = [];
+  let batteryLoaded = false;
+  let selectedBatteryCarId = null;
   let session = null;
   let selectedCar = null;
   let pendingCar = null;
@@ -763,6 +819,8 @@
     card.style.display = "none";
     addPanel.style.display = "none";
     loginPanel.style.display = "none";
+    $("batteryPanel").style.display = "none";
+    $("archivePanel").style.display = "none";
   }
 
   function updateAdminUI() {
@@ -787,6 +845,10 @@
       closePanels();
     }
 
+    $("batteryFilter").style.display = admin ? "inline-block" : "none";
+    $("archiveButton").style.display = admin ? "inline-block" : "none";
+    $("batterySummary").style.display = admin ? "flex" : "none";
+    if (!admin) { batteryChecks = []; batteryLoaded = false; $("batteryFilter").value = ""; $("batteryPanel").style.display = "none"; $("archivePanel").style.display = "none"; }
     renderCars();
   }
 
@@ -955,6 +1017,7 @@
 
       setStatus("Als Administrator angemeldet.");
       await loadCars(true);
+      await loadBatteryChecks();
     } catch (error) {
       console.error(error);
       $("loginMessage").textContent =
@@ -1096,6 +1159,137 @@
     }
   }
 
+  /* BATTERIE: vollständige Historie, nur für Administrator */
+  function localISODate(date = new Date()) {
+    const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,"0"), d = String(date.getDate()).padStart(2,"0");
+    return `${y}-${m}-${d}`;
+  }
+  function nextMonthISO(value) {
+    if (!value) return "";
+    const [y,m,d] = value.split("-").map(Number);
+    const targetYear = y + Math.floor(m/12), targetMonth = m%12 + 1;
+    const days = new Date(targetYear,targetMonth,0).getDate();
+    return `${targetYear}-${String(targetMonth).padStart(2,"0")}-${String(Math.min(d,days)).padStart(2,"0")}`;
+  }
+  function germanDate(value) { return value ? value.split("-").reverse().join(".") : "—"; }
+  function checksFor(carId) { return batteryChecks.filter(c => Number(c.car_id) === Number(carId)).sort((a,b) => b.checked_at.localeCompare(a.checked_at) || Number(b.id)-Number(a.id)); }
+  function batteryState(car) {
+    const history = checksFor(car.id);
+    if (!history.length) return {kind:"none",label:"Keine Daten"};
+    const lastTest = history.find(c => c.event_type === "check" || c.event_type === "check_and_charge");
+    if (!lastTest) return {kind:"none",label:"Keine Prüfung"};
+    if (lastTest.tester_result === "Ersetzen") return {kind:"replace",label:"Ersetzen"};
+    if (lastTest.tester_result === "Nachladen") {
+      const chargedAfter = history.some(c => (c.event_type === "charge" || c.event_type === "check_and_charge") && (c.checked_at > lastTest.checked_at || (c.checked_at === lastTest.checked_at && Number(c.id) > Number(lastTest.id))));
+      if (!chargedAfter) return {kind:"charge",label:"Nachladen"};
+    }
+    const next = lastTest.next_check_at || nextMonthISO(lastTest.checked_at);
+    const today = localISODate();
+    if (next < today) return {kind:"overdue",label:"Überfällig",next};
+    const soon = new Date(); soon.setDate(soon.getDate()+7);
+    if (next <= localISODate(soon)) return {kind:"due",label:"Prüfung fällig",next};
+    return {kind:"ok",label:"OK",next};
+  }
+  async function loadBatteryChecks() {
+    if (!isAdmin() || savingInProgress || dragInProgress || document.hidden) return;
+    try {
+      const response = await apiRequest("battery_checks?select=*&order=checked_at.desc,id.desc&limit=10000");
+      const data = await response.json();
+      if (JSON.stringify(data) !== JSON.stringify(batteryChecks)) {
+        batteryChecks = data;
+        renderCars();
+        if ($("batteryPanel").style.display === "block") renderBatteryPanel();
+      }
+      batteryLoaded = true;
+    } catch(error) { console.error("Batterie laden:",error); }
+  }
+  function renderBatterySummary() {
+    const el = $("batterySummary");
+    if (!isAdmin()) return;
+    const active = cars.filter(c => (c.yard_status || "on_site") === "on_site");
+    const count = kind => active.filter(c => batteryState(c).kind === kind).length;
+    el.textContent = `🔋 Überfällig: ${count("overdue")} · Bald fällig: ${count("due")} · Laden: ${count("charge")} · Ersetzen: ${count("replace")} · Ohne Daten: ${count("none")}`;
+  }
+  function renderBatteryPanel() {
+    const car = cars.find(c => Number(c.id) === Number(selectedBatteryCarId));
+    if (!car) return;
+    $("batteryTitle").textContent = `🔋 ${car.model || "Fahrzeug"} · ${car.vin_full || car.vin5 || ""}`;
+    const history = checksFor(car.id), state = batteryState(car);
+    const last = history.find(c => c.event_type === "check" || c.event_type === "check_and_charge");
+    $("batteryCurrent").textContent = `Status: ${state.label} | Letzte Prüfung: ${germanDate(last?.checked_at)} | Nächste Prüfung: ${germanDate(state.next || last?.next_check_at)} | Spannung: ${last?.resting_voltage ?? "—"} V`;
+    const list = $("batteryHistory"); list.replaceChildren();
+    if (!history.length) { list.textContent = "Noch keine Einträge."; return; }
+    for (const h of history) {
+      const div = document.createElement("div"); div.className = "batteryEntry";
+      const eventName = {check:"Prüfung",charge:"Ladung",check_and_charge:"Prüfung und Ladung"}[h.event_type] || h.event_type;
+      div.textContent = `${germanDate(h.checked_at)} · ${eventName}\nSpannung: ${h.resting_voltage ?? "—"} V · Tester: ${h.tester_result || "—"}\nNächste Prüfung: ${germanDate(h.next_check_at)}${h.notes ? "\nNotiz: " + h.notes : ""}`;
+      list.appendChild(div);
+    }
+  }
+  function openBattery(car) {
+    if (!isAdmin()) { alert("Nur für Administrator."); return; }
+    selectedBatteryCarId = car.id;
+    $("batteryDate").value = localISODate();
+    $("batteryEvent").value = "check";
+    $("batteryVoltage").value = "";
+    $("batteryTester").value = "";
+    $("batteryNotes").value = "";
+    $("batteryNext").value = nextMonthISO($("batteryDate").value);
+    closePanels();
+    $("batteryPanel").style.display = "block";
+    renderBatteryPanel();
+  }
+  $("closeBattery").onclick = () => $("batteryPanel").style.display = "none";
+  $("batteryDate").addEventListener("change", () => { if ($("batteryEvent").value !== "charge") $("batteryNext").value = nextMonthISO($("batteryDate").value); });
+  $("batteryEvent").addEventListener("change", () => { $("batteryNext").value = $("batteryEvent").value === "charge" ? "" : nextMonthISO($("batteryDate").value); });
+  $("saveBattery").addEventListener("click", async () => {
+    if (!isAdmin() || !selectedBatteryCarId) return;
+    const date = $("batteryDate").value, eventType = $("batteryEvent").value;
+    if (!date) { alert("Bitte Datum eingeben."); return; }
+    const voltageText = $("batteryVoltage").value.trim();
+    const voltage = voltageText === "" ? null : Number(voltageText);
+    if (voltage !== null && (!Number.isFinite(voltage) || voltage < 0 || voltage > 20)) { alert("Spannung muss zwischen 0 und 20 V liegen."); return; }
+    const entry = {car_id:selectedBatteryCarId,checked_at:date,event_type:eventType,resting_voltage:voltage,tester_result:$("batteryTester").value || null,next_check_at:$("batteryNext").value || null,notes:$("batteryNotes").value.trim() || null};
+    if (!confirm(`Eintrag vom ${germanDate(date)} speichern?`)) return;
+    savingInProgress = true; $("saveBattery").disabled = true;
+    try {
+      await apiRequest("battery_checks",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(entry)});
+      $("batteryVoltage").value = ""; $("batteryNotes").value = "";
+      alert("Batterieeintrag gespeichert.");
+    } catch(error) { console.error(error); alert("Speichern fehlgeschlagen: " + error.message); }
+    finally { savingInProgress = false; $("saveBattery").disabled = false; await loadBatteryChecks(); }
+  });
+  function renderArchive() {
+    const q = $("archiveSearch").value.trim().toLowerCase(), list = $("archiveList"); list.replaceChildren();
+    const archived = cars.filter(c => (c.yard_status || "on_site") !== "on_site" && [c.vin5,c.vin_full,c.fahrnummer,c.model].some(v => String(v||"").toLowerCase().includes(q)));
+    if (!archived.length) { list.textContent = "Keine Fahrzeuge gefunden."; return; }
+    for (const car of archived) {
+      const btn = document.createElement("button"); btn.className = "archiveItem";
+      btn.textContent = `${car.model || "Fahrzeug"} · ${car.vin_full || car.vin5 || ""} · ${car.fahrnummer || ""} · ${car.yard_status === "sold" ? "Verkauft" : "Abgefahren"} · 🔋 ${batteryState(car).label}`;
+      btn.onclick = () => { $("archivePanel").style.display = "none"; showCar(car); };
+      list.appendChild(btn);
+    }
+  }
+  $("archiveButton").onclick = () => { if (!isAdmin()) return; closePanels(); $("archivePanel").style.display = "block"; renderArchive(); };
+  $("closeArchive").onclick = () => $("archivePanel").style.display = "none";
+  $("archiveSearch").addEventListener("input",renderArchive);
+  async function setYardStatus(value) {
+    if (!isAdmin() || !selectedCar) return;
+    if (!confirm(`${selectedCar.vin5 || "Fahrzeug"} als ${value === "sold" ? "verkauft" : "abgefahren"} markieren? Historie bleibt erhalten.`)) return;
+    savingInProgress = true;
+    try {
+      await apiRequest(`cars?id=eq.${selectedCar.id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({yard_status:value,sold_at:value === "sold" ? new Date().toISOString() : null})});
+      selectedCar.yard_status = value;
+      selectedCar.sold_at = value === "sold" ? new Date().toISOString() : null;
+      lastCarsSnapshot = ""; card.style.display = "none"; renderCars();
+      alert("Im Archiv gespeichert. Batteriehistorie bleibt erhalten.");
+    } catch(error) { console.error(error); alert("Status konnte nicht gespeichert werden."); }
+    finally { savingInProgress = false; await loadCars(true); }
+  }
+  $("soldCarButton").onclick = () => setYardStatus("sold");
+  $("departedCarButton").onclick = () => setYardStatus("departed");
+  $("batteryButton").onclick = () => { if (selectedCar) openBattery(selectedCar); };
+
   /* МОДЕЛИ И ЦВЕТА */
   function getVehicleType(model) {
     const m = (model || "").toLowerCase();
@@ -1176,6 +1370,7 @@
 
     const text = [
       car.vin5 || "",
+      car.vin_full || "",
       car.fahrnummer || "",
       car.model || ""
     ].join(" ").toLowerCase();
@@ -1192,6 +1387,10 @@
       car.color !== $("colorFilter").value
     ) return false;
 
+    if (isAdmin() && $("batteryFilter").value) {
+      const state = batteryState(car).kind, filter = $("batteryFilter").value;
+      if (state !== filter) return false;
+    }
     return true;
   }
 
@@ -1255,6 +1454,7 @@
     let visibleCount = 0;
 
     cars.forEach(car => {
+      if ((car.yard_status || "on_site") !== "on_site") return;
       if (
         car.position_x == null ||
         car.position_y == null
@@ -1279,6 +1479,14 @@
       vin.className = "carVin";
       vin.textContent = car.vin5 || "?";
       marker.appendChild(vin);
+      if (isAdmin()) {
+        const state = batteryState(car);
+        const dot = document.createElement("span");
+        dot.className = "batteryDot " + state.kind;
+        dot.textContent = state.kind === "ok" ? "✓" : state.kind === "none" ? "?" : "!";
+        dot.title = "Batterie: " + state.label;
+        marker.appendChild(dot);
+      }
 
       marker.title = [
         car.model || "",
@@ -1305,6 +1513,7 @@
       markers.appendChild(marker);
     });
 
+    renderBatterySummary();
     setStatus(
       visibleCount +
       " Fahrzeug" +
@@ -1466,6 +1675,7 @@
       car.model || "Fahrzeug";
 
     $("editVin").value = car.vin5 || "";
+    $("editVinFull").value = car.vin_full || "";
 
     $("editFahrnummer").value =
       car.fahrnummer || "";
@@ -1480,6 +1690,7 @@
 
     [
       "editVin",
+      "editVinFull",
       "editFahrnummer",
       "editModel",
       "editColor",
@@ -1491,10 +1702,13 @@
     $("saveCarButton").style.display =
       admin ? "block" : "none";
 
-    $("deleteCarButton").style.display =
-      admin ? "block" : "none";
+    $("deleteCarButton").style.display = admin && checksFor(car.id).length === 0 ? "block" : "none";
+    $("batteryButton").style.display = admin ? "block" : "none";
+    $("soldCarButton").style.display = admin && (car.yard_status || "on_site") === "on_site" ? "block" : "none";
+    $("departedCarButton").style.display = admin && (car.yard_status || "on_site") === "on_site" ? "block" : "none";
 
     updateMobileButton(car.mobile_url);
+    $("cardTitle").textContent = (car.model || "Fahrzeug") + ((car.yard_status || "on_site") === "on_site" ? "" : " · Archiv");
 
     addPanel.style.display = "none";
     card.style.display = "block";
@@ -1513,6 +1727,8 @@
 
       const vin = $("editVin").value.trim();
 
+      const vinFull = $("editVinFull").value.trim().toUpperCase();
+      if (vinFull && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vinFull)) { alert("Vollständige VIN muss 17 Zeichen haben (ohne I, O, Q)."); return; }
       const fahrnummer =
         $("editFahrnummer").value.trim();
 
@@ -1546,6 +1762,7 @@
             },
             body: JSON.stringify({
               vin5: vin,
+              vin_full: vinFull || null,
               fahrnummer,
               model,
               color,
@@ -1556,6 +1773,7 @@
 
         Object.assign(selectedCar, {
           vin5: vin,
+          vin_full: vinFull || null,
           fahrnummer,
           model,
           color,
@@ -1588,7 +1806,7 @@
     "click",
     async () => {
       if (!isAdmin() || !selectedCar) return;
-
+      if (checksFor(selectedCar.id).length) { alert("Batteriehistorie vorhanden. Bitte Fahrzeug archivieren, nicht löschen."); return; }
       const confirmed = confirm(
         `Fahrzeug ${
           selectedCar.vin5 || ""
@@ -1678,8 +1896,11 @@
         return;
       }
 
+      const newVinFull = $("newVinFull").value.trim().toUpperCase();
+      if (newVinFull && !/^[A-HJ-NPR-Z0-9]{17}$/.test(newVinFull)) { alert("Vollständige VIN muss 17 Zeichen haben."); return; }
       pendingCar = {
         vin5: vin,
+        vin_full: newVinFull || null,
         fahrnummer,
         model: $("newModel").value,
         color: $("newColor").value,
@@ -1753,6 +1974,7 @@
           "none";
 
         $("newVin").value = "";
+        $("newVinFull").value = "";
         $("newFahrnummer").value = "";
         $("newMobileUrl").value = "";
 
@@ -1774,6 +1996,7 @@
 
         if (!placementMode) {
           loadCars(true);
+          loadBatteryChecks();
         }
       }
     }
@@ -1790,6 +2013,7 @@
     renderCars
   );
 
+  $("batteryFilter").addEventListener("change", renderCars);
   $("colorFilter").addEventListener(
     "change",
     renderCars
@@ -1799,10 +2023,12 @@
   async function start() {
     await restoreSession();
     await loadCars(true);
+    await loadBatteryChecks();
 
     /* Проверяем изменения каждые 3 секунды. */
     setInterval(() => {
       loadCars();
+      if (isAdmin()) loadBatteryChecks();
     }, AUTO_REFRESH_MS);
 
     /* После возвращения на вкладку обновляем сразу. */
