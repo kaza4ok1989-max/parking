@@ -391,6 +391,11 @@
 
     .batterySummary { display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin:8px 0; }
     .batterySummary button { min-height:34px; font-size:13px; }
+    #branchList { display:none; background:white; border:1px solid #cbd5e1; border-radius:10px; padding:12px; }
+    .branchCar { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid #e2e8f0; }
+    .branchCar button { background:#eff6ff; text-align:left; flex:1; }
+    .branchCar small { display:block; color:#475569; margin-top:4px; }
+    #branchSelect { max-width:280px; background:#fff; font-weight:bold; }
     .archiveItem { display:block; width:100%; margin:5px 0; text-align:left; background:white; }
     .panel {
       display: none;
@@ -496,6 +501,7 @@
   <h1>Parking · Fahrzeugkarte</h1>
 
   <div class="toolbar">
+    <select id="branchSelect" aria-label="Standort auswählen"><option value="1">Hauptparkplatz · Glauchau</option></select>
     <input
       id="search"
       type="search"
@@ -576,6 +582,7 @@
     >
     <div id="markers"></div>
   </div>
+  <div id="branchList"></div>
 </main>
 
 <!-- ВХОД АДМИНИСТРАТОРА -->
@@ -679,6 +686,11 @@
   <button id="closeCard" class="closeButton" type="button">×</button>
   <h2 id="cardTitle">Fahrzeug</h2>
 
+  <div class="formRow" id="editBranchRow" style="display:none">
+    <label for="editBranch">Standort / Fahrzeug verlegen</label>
+    <select id="editBranch"></select>
+    <small>Beim Verlegen bleibt die gesamte Batteriehistorie erhalten.</small>
+  </div>
   <div class="formRow">
     <label for="editVin">VIN</label>
     <input id="editVin" type="text">
@@ -805,6 +817,28 @@
   /* Автообновление каждые 3 секунды */
   const AUTO_REFRESH_MS = 3000;
 
+  let branches = [{id:1,name:"Hauptparkplatz",has_parking_map:true}];
+  let activeBranchId = 1;
+  const branchOf = car => Number(car.branch_id ?? 1);
+  const branchName = id => branches.find(b => Number(b.id) === Number(id))?.name || ("Standort " + id);
+  function fillBranchSelect(select, selected) {
+    select.replaceChildren();
+    for (const b of branches) {
+      const o = document.createElement("option"); o.value = b.id;
+      o.textContent = b.id === 1 ? "Hauptparkplatz · Glauchau" : b.name;
+      select.appendChild(o);
+    }
+    select.value = String(selected);
+  }
+  async function loadBranches() {
+    try {
+      const response = await apiRequest("branches?select=id,name,has_parking_map&order=id.asc");
+      const result = await response.json();
+      if (Array.isArray(result) && result.length) branches = result;
+      fillBranchSelect($("branchSelect"), activeBranchId);
+      fillBranchSelect($("editBranch"), activeBranchId);
+    } catch (error) { console.error("Standorte laden:", error); }
+  }
   let cars = [];
   let batteryChecks = [];
   let batteryLoaded = false;
@@ -1235,7 +1269,7 @@
   function renderBatterySummary() {
     const el = $("batterySummary");
     if (!isAdmin()) return;
-    const active = cars.filter(c => (c.yard_status || "on_site") === "on_site");
+    const active = cars.filter(c => branchOf(c) === activeBranchId && (c.yard_status || "on_site") === "on_site");
     const count = kind => active.filter(c => batteryState(c).kind === kind).length;
     el.textContent = `🔋 Überfällig: ${count("overdue")} · Bald fällig: ${count("due")} · Laden: ${count("charge")} · Ersetzen: ${count("replace")} · Ohne Daten: ${count("none")}`;
   }
@@ -1251,7 +1285,7 @@
     for (const h of history) {
       const div = document.createElement("div"); div.className = "batteryEntry";
       const eventName = {check:"Prüfung",charge:"Ladung",check_and_charge:"Prüfung und Ladung"}[h.event_type] || h.event_type;
-      div.textContent = `${h.is_void ? "⛔ STORNIERT · " : ""}${germanDate(h.checked_at)} · ${eventName}\nSpannung: ${h.resting_voltage ?? "—"} V · Tester: ${h.tester_result || "—"}\nNächste Prüfung: ${germanDate(h.next_check_at)}${h.notes ? "\nNotiz: " + h.notes : ""}${h.is_void ? "\nStornogrund: " + (h.void_reason || "—") : ""}`;
+      div.textContent = `${h.is_void ? "⛔ STORNIERT · " : ""}${germanDate(h.checked_at)} · ${eventName} · ${branchName(h.branch_id ?? branchOf(car))}\nSpannung: ${h.resting_voltage ?? "—"} V · Tester: ${h.tester_result || "—"}\nNächste Prüfung: ${germanDate(h.next_check_at)}${h.notes ? "\nNotiz: " + h.notes : ""}${h.is_void ? "\nStornogrund: " + (h.void_reason || "—") : ""}`;
       if (h.is_void) div.classList.add("voided");
       if (isAdmin() && !h.is_void) {
         const actions = document.createElement("div"); actions.className = "batteryEntryActions";
@@ -1397,7 +1431,7 @@
         const last = records.find(h => h.event_type === "check" || h.event_type === "check_and_charge");
         const state = batteryStateFromRecords(records);
         const row = {
-          "VIN (vollständig)":car.vin_full || "", "VIN (letzte 5)":car.vin5 || "",
+          "Standort":branchName(car.branch_id ?? 1), "VIN (vollständig)":car.vin_full || "", "VIN (letzte 5)":car.vin5 || "",
           "Fahrzeugnummer":car.fahrnummer || "", "Modell":car.model || "", "Farbe":car.color || "",
           "Fahrzeugstatus":excelYard(car.yard_status), "Letzte Prüfung":excelDate(last?.checked_at),
           "Nächste Prüfung":excelDate(state.next || last?.next_check_at),
@@ -1410,7 +1444,7 @@
       for (const h of allChecks) {
         const car = carMap.get(Number(h.car_id));
         history.push({
-          "Eintrag-ID":h.id, "VIN (vollständig)":car?.vin_full || "", "VIN (letzte 5)":car?.vin5 || "",
+          "Eintrag-ID":h.id, "Standort bei Vorgang":branchName(h.branch_id ?? car?.branch_id ?? 1), "VIN (vollständig)":car?.vin_full || "", "VIN (letzte 5)":car?.vin5 || "",
           "Fahrzeugnummer":car?.fahrnummer || "", "Modell":car?.model || "",
           "Fahrzeugstatus":car ? excelYard(car.yard_status) : "Unbekannt",
           "Datum":excelDate(h.checked_at), "Vorgang":excelEvent(h.event_type),
@@ -1421,9 +1455,9 @@
       }
       const wb = XLSX.utils.book_new();
       const add = (name, rows, keys) => XLSX.utils.book_append_sheet(wb,excelSheet(rows,keys),name);
-      add("Fahrzeugübersicht",overview,["VIN (vollständig)","VIN (letzte 5)","Fahrzeugnummer","Modell","Farbe","Fahrzeugstatus","Letzte Prüfung","Nächste Prüfung","Letzte Ruhespannung (V)","Letztes Testergebnis","Batteriestatus","Anzahl Einträge"]);
-      add("Batteriehistorie",history,["Eintrag-ID","VIN (vollständig)","VIN (letzte 5)","Fahrzeugnummer","Modell","Fahrzeugstatus","Datum","Vorgang","Ruhespannung (V)","Testergebnis","Nächste Prüfung","Notizen","Eintragsstatus","Stornogrund"]);
-      add("Fällige Prüfungen",due,["VIN (vollständig)","VIN (letzte 5)","Fahrzeugnummer","Modell","Farbe","Fahrzeugstatus","Letzte Prüfung","Nächste Prüfung","Letzte Ruhespannung (V)","Letztes Testergebnis","Batteriestatus","Anzahl Einträge"]);
+      add("Fahrzeugübersicht",overview,["Standort","VIN (vollständig)","VIN (letzte 5)","Fahrzeugnummer","Modell","Farbe","Fahrzeugstatus","Letzte Prüfung","Nächste Prüfung","Letzte Ruhespannung (V)","Letztes Testergebnis","Batteriestatus","Anzahl Einträge"]);
+      add("Batteriehistorie",history,["Eintrag-ID","Standort bei Vorgang","VIN (vollständig)","VIN (letzte 5)","Fahrzeugnummer","Modell","Fahrzeugstatus","Datum","Vorgang","Ruhespannung (V)","Testergebnis","Nächste Prüfung","Notizen","Eintragsstatus","Stornogrund"]);
+      add("Fällige Prüfungen",due,["Standort","VIN (vollständig)","VIN (letzte 5)","Fahrzeugnummer","Modell","Farbe","Fahrzeugstatus","Letzte Prüfung","Nächste Prüfung","Letzte Ruhespannung (V)","Letztes Testergebnis","Batteriestatus","Anzahl Einträge"]);
       const auditExport = auditRows.map(a => ({
         "Protokoll-ID":a.id, "Eintrag-ID":a.battery_check_id,
         "Änderungszeitpunkt":a.changed_at || "", "Bearbeiter-ID":a.changed_by || "",
@@ -1452,7 +1486,7 @@
   }
   function renderArchive() {
     const q = $("archiveSearch").value.trim().toLowerCase(), list = $("archiveList"); list.replaceChildren();
-    const archived = cars.filter(c => (c.yard_status || "on_site") !== "on_site" && [c.vin5,c.vin_full,c.fahrnummer,c.model].some(v => String(v||"").toLowerCase().includes(q)));
+    const archived = cars.filter(c => branchOf(c) === activeBranchId && (c.yard_status || "on_site") !== "on_site" && [c.vin5,c.vin_full,c.fahrnummer,c.model].some(v => String(v||"").toLowerCase().includes(q)));
     if (!archived.length) { list.textContent = "Keine Fahrzeuge gefunden."; return; }
     for (const car of archived) {
       const btn = document.createElement("button"); btn.className = "archiveItem";
@@ -1669,10 +1703,26 @@
     if (dragInProgress) return;
 
     markers.innerHTML = "";
+    const isMap = activeBranchId === 1;
+    $("mapWrapper").style.display = isMap ? "block" : "none";
+    $("branchList").style.display = isMap ? "none" : "block";
+    $("branchList").replaceChildren();
     let visibleCount = 0;
 
     cars.forEach(car => {
-      if ((car.yard_status || "on_site") !== "on_site") return;
+      if ((car.yard_status || "on_site") !== "on_site" || branchOf(car) !== activeBranchId) return;
+      if (!isMap) {
+        if (!carMatches(car)) return;
+        visibleCount++;
+        const row = document.createElement("div"); row.className = "branchCar";
+        const btn = document.createElement("button"); btn.type = "button";
+        btn.textContent = `${car.model || "Fahrzeug"} · VIN ${car.vin_full || car.vin5 || "—"}`;
+        const small = document.createElement("small");
+        small.textContent = `${car.fahrnummer || ""} · 🔋 ${isAdmin() ? batteryState(car).label : ""}`;
+        btn.appendChild(small); btn.onclick = () => showCar(car);
+        row.appendChild(btn); $("branchList").appendChild(row);
+        return;
+      }
       if (
         car.position_x == null ||
         car.position_y == null
@@ -1731,12 +1781,13 @@
       markers.appendChild(marker);
     });
 
+    if (!isMap && !visibleCount) $("branchList").textContent = "Keine Fahrzeuge an diesem Standort.";
     renderBatterySummary();
     setStatus(
       visibleCount +
       " Fahrzeug" +
       (visibleCount === 1 ? "" : "e") +
-      " angezeigt · Automatische Aktualisierung aktiv"
+      " angezeigt · " + branchName(activeBranchId) + " · Automatische Aktualisierung aktiv"
     );
   }
 
@@ -1899,6 +1950,8 @@
       car.fahrnummer || "";
 
     setSelectValue($("editModel"), car.model);
+    fillBranchSelect($("editBranch"), branchOf(car));
+    $("editBranchRow").style.display = isAdmin() ? "block" : "none";
     setSelectValue($("editColor"), car.color);
 
     $("editMobileUrl").value =
@@ -1920,7 +1973,7 @@
     $("saveCarButton").style.display =
       admin ? "block" : "none";
 
-    $("deleteCarButton").style.display = admin && checksFor(car.id).length === 0 ? "block" : "none";
+    $("deleteCarButton").style.display = admin && checksFor(car.id, true).length === 0 ? "block" : "none";
     $("batteryButton").style.display = admin ? "block" : "none";
     $("soldCarButton").style.display = admin && (car.yard_status || "on_site") === "on_site" ? "block" : "none";
     $("departedCarButton").style.display = admin && (car.yard_status || "on_site") === "on_site" ? "block" : "none";
@@ -1985,7 +2038,8 @@
               fahrnummer,
               model,
               color,
-              mobile_url: mobileUrl
+              mobile_url: mobileUrl,
+              branch_id: Number($("editBranch").value)
             })
           }
         );
@@ -1996,13 +2050,15 @@
           fahrnummer,
           model,
           color,
-          mobile_url: mobileUrl
+          mobile_url: mobileUrl,
+          branch_id: Number($("editBranch").value)
         });
 
         $("cardTitle").textContent = model;
         updateMobileButton(mobileUrl);
 
         lastCarsSnapshot = "";
+        if (branchOf(selectedCar) !== activeBranchId) card.style.display = "none";
         renderCars();
 
         setStatus("Änderungen gespeichert.");
@@ -2025,7 +2081,7 @@
     "click",
     async () => {
       if (!isAdmin() || !selectedCar) return;
-      if (checksFor(selectedCar.id).length) { alert("Batteriehistorie vorhanden. Bitte Fahrzeug archivieren, nicht löschen."); return; }
+      if (checksFor(selectedCar.id, true).length) { alert("Batteriehistorie vorhanden. Bitte Fahrzeug archivieren, nicht löschen."); return; }
       const confirmed = confirm(
         `Fahrzeug ${
           selectedCar.vin5 || ""
@@ -2100,7 +2156,7 @@
 
   $("placeCarButton").addEventListener(
     "click",
-    () => {
+    async () => {
       if (!isAdmin()) return;
 
       const vin = $("newVin").value.trim();
@@ -2127,6 +2183,24 @@
           $("newMobileUrl").value.trim()
       };
 
+      if (activeBranchId !== 1) {
+        addPanel.style.display = "none";
+        savingInProgress = true;
+        try {
+          const response = await apiRequest("cars", {
+            method:"POST", headers:{Prefer:"return=representation"},
+            body:JSON.stringify({...pendingCar,branch_id:activeBranchId,position_x:null,position_y:null})
+          });
+          const created = await response.json();
+          if (created[0]) cars.push(created[0]);
+          pendingCar = null;
+          $("newVin").value = ""; $("newVinFull").value = "";
+          $("newFahrnummer").value = ""; $("newMobileUrl").value = "";
+          renderCars();
+        } catch(error) { console.error(error); alert("Fahrzeug konnte nicht gespeichert werden: " + error.message); }
+        finally { savingInProgress = false; await loadCars(true); }
+        return;
+      }
       placementMode = true;
       addPanel.style.display = "none";
 
@@ -2158,6 +2232,7 @@
 
       const newCar = {
         ...pendingCar,
+        branch_id: 1,
         position_x: pos.x,
         position_y: pos.y
       };
@@ -2221,6 +2296,15 @@
     }
   );
 
+  $("branchSelect").addEventListener("change", () => {
+    activeBranchId = Number($("branchSelect").value);
+    placementMode = false; pendingCar = null;
+    $("placementMessage").style.display = "none";
+    closePanels();
+    $("placeCarButton").textContent = activeBranchId === 1 ? "Auf Parkplatz setzen" : "Fahrzeug speichern";
+    renderCars();
+  });
+
   /* ПОИСК И ФИЛЬТРЫ */
   $("search").addEventListener(
     "input",
@@ -2241,6 +2325,7 @@
   /* ЗАПУСК САЙТА */
   async function start() {
     await restoreSession();
+    await loadBranches();
     await loadCars(true);
     await loadBatteryChecks();
 
