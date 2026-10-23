@@ -548,6 +548,7 @@
       <option value="replace">Ersetzen</option>
       <option value="none">Keine Daten</option>
     </select>
+    <button id="externalBatteryButton" type="button" style="display:none">🔋 Ladung ohne Parkplatz</button>
     <button id="archiveButton" type="button" style="display:none">Archiv</button>
     <button id="excelExportButton" type="button" style="display:none">📥 Excel exportieren</button>
     <button id="addCarButton" type="button">
@@ -776,6 +777,22 @@
   </button>
 </div>
 
+<!-- SEPARATE BATTERIEHISTORIE OHNE PARKPLATZ -->
+<div id="externalBatteryPanel" class="panel" style="top:35px;max-width:590px">
+  <button id="closeExternalBattery" class="closeButton" type="button">×</button>
+  <h2>🔋 Ladung ohne Parkplatz</h2>
+  <p style="font-size:13px">Fahrzeuge ohne Parkplatz-Eintrag. Die Fahrzeugkarte bleibt unverändert.</p>
+  <div class="formRow"><label for="externalVin">Vollständige VIN (17 Zeichen)</label><input id="externalVin" type="text" maxlength="17" placeholder="WF0..." autocomplete="off"></div>
+  <div class="formRow"><label for="externalBranch">Standort der Prüfung / Ladung</label><select id="externalBranch"></select></div>
+  <div class="formRow"><label for="externalDate">Datum</label><input id="externalDate" type="date"></div>
+  <div class="formRow"><label for="externalEvent">Vorgang</label><select id="externalEvent"><option value="charge">Ladung</option><option value="check">Prüfung</option><option value="check_and_charge">Prüfung und Ladung</option></select></div>
+  <div class="formRow"><label for="externalVoltage">Ruhespannung (V, optional)</label><input id="externalVoltage" type="number" min="0" max="20" step="0.01" placeholder="12.60"></div>
+  <div class="formRow"><label for="externalTester">Testergebnis</label><select id="externalTester"><option value="">Nicht angegeben</option><option value="OK">OK</option><option value="Nachladen">Nachladen</option><option value="Ersetzen">Ersetzen</option><option value="Unbekannt">Unbekannt</option></select></div>
+  <div class="formRow"><label for="externalNotes">Notizen</label><input id="externalNotes" maxlength="1000" placeholder="Bemerkungen"></div>
+  <button id="saveExternalBattery" class="primaryButton fullButton" type="button">Ladung / Prüfung speichern</button>
+  <h3>Verlauf dieser VIN (alle Standorte)</h3><div id="externalHistory" class="batteryHistory">VIN eingeben, um den Verlauf zu sehen.</div>
+  <h3>Letzte Vorgänge ohne Parkplatz</h3><div id="externalRecent" class="batteryHistory"></div>
+</div>
 <!-- BATTERIE / ARCHIV -->
 <div id="batteryPanel" class="panel" style="top:35px;max-width:540px">
   <button id="closeBattery" class="closeButton" type="button">×</button>
@@ -837,6 +854,7 @@
       if (Array.isArray(result) && result.length) branches = result;
       fillBranchSelect($("branchSelect"), activeBranchId);
       fillBranchSelect($("editBranch"), activeBranchId);
+      fillBranchSelect($("externalBranch"), activeBranchId);
     } catch (error) { console.error("Standorte laden:", error); }
   }
   let cars = [];
@@ -880,6 +898,7 @@
     loginPanel.style.display = "none";
     $("batteryPanel").style.display = "none";
     $("archivePanel").style.display = "none";
+    $("externalBatteryPanel").style.display = "none";
   }
 
   function updateAdminUI() {
@@ -906,6 +925,7 @@
 
     $("batteryFilter").style.display = admin ? "inline-block" : "none";
     $("archiveButton").style.display = admin ? "inline-block" : "none";
+    $("externalBatteryButton").style.display = admin ? "inline-block" : "none";
     $("excelExportButton").style.display = admin ? "inline-block" : "none";
     $("batterySummary").style.display = admin ? "flex" : "none";
     if (!admin) { batteryChecks = []; batteryLoaded = false; $("batteryFilter").value = ""; $("batteryPanel").style.display = "none"; $("archivePanel").style.display = "none"; }
@@ -1374,6 +1394,65 @@
     } catch(error) { console.error(error); alert("Speichern fehlgeschlagen: " + error.message); }
     finally { savingInProgress = false; $("saveBattery").disabled = false; await loadBatteryChecks(); }
   });
+  // Separate Batterie-Ereignisse: VIN ohne Parkplatzkarte.
+  function externalVIN() { return $("externalVin").value.trim().toUpperCase().replace(/\s+/g, ""); }
+  async function refreshExternalBattery() {
+    if (!isAdmin() || $("externalBatteryPanel").style.display !== "block") return;
+    try {
+      const vin = externalVIN();
+      const query = vin.length === 17 && /^[A-HJ-NPR-Z0-9]{17}$/.test(vin)
+        ? `external_battery_events?select=*&vin_full=eq.${encodeURIComponent(vin)}&order=checked_at.desc,id.desc&limit=1000`
+        : null;
+      const history = query ? await (await apiRequest(query)).json() : [];
+      const list = $("externalHistory"); list.replaceChildren();
+      if (!query) list.textContent = "Bitte vollständige VIN (17 Zeichen) eingeben.";
+      else if (!history.length) list.textContent = "Noch keine Einträge für diese VIN.";
+      else for (const h of history) {
+        const div = document.createElement("div"); div.className = "batteryEntry";
+        div.textContent = `${germanDate(h.checked_at)} · ${branchName(h.branch_id)} · ${{check:"Prüfung",charge:"Ladung",check_and_charge:"Prüfung und Ladung"}[h.event_type] || h.event_type}\nSpannung: ${h.resting_voltage ?? "—"} V · Tester: ${h.tester_result || "—"}${h.notes ? "\n" + h.notes : ""}`;
+        list.appendChild(div);
+      }
+      const recent = await (await apiRequest("external_battery_events?select=*&order=id.desc&limit=100")).json();
+      const rec = $("externalRecent"); rec.replaceChildren();
+      if (!recent.length) rec.textContent = "Noch keine Einträge.";
+      for (const h of recent) {
+        const btn = document.createElement("button"); btn.type = "button"; btn.className = "archiveItem";
+        btn.textContent = `${germanDate(h.checked_at)} · ${branchName(h.branch_id)} · ${h.vin_full} · ${h.event_type}`;
+        btn.onclick = () => { $("externalVin").value = h.vin_full; refreshExternalBattery(); };
+        rec.appendChild(btn);
+      }
+    } catch (error) { console.error(error); $("externalHistory").textContent = "Fehler beim Laden. SQL-Migration 05 prüfen: " + error.message; }
+  }
+  $("externalBatteryButton").onclick = () => {
+    if (!isAdmin()) return;
+    closePanels(); fillBranchSelect($("externalBranch"), activeBranchId);
+    $("externalDate").value = localISODate();
+    $("externalBatteryPanel").style.display = "block";
+    refreshExternalBattery();
+  };
+  $("closeExternalBattery").onclick = () => $("externalBatteryPanel").style.display = "none";
+  $("externalVin").addEventListener("change", refreshExternalBattery);
+  $("externalVin").addEventListener("input", () => { if (externalVIN().length === 17) refreshExternalBattery(); });
+  $("saveExternalBattery").onclick = async () => {
+    if (!isAdmin()) return;
+    const vin = externalVIN();
+    if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) { alert("Bitte gültige vollständige VIN mit 17 Zeichen eingeben."); return; }
+    const checked_at = $("externalDate").value;
+    if (!checked_at) { alert("Bitte Datum auswählen."); return; }
+    const value = $("externalVoltage").value.trim();
+    const resting_voltage = value === "" ? null : Number(value);
+    if (resting_voltage !== null && (!Number.isFinite(resting_voltage) || resting_voltage < 0 || resting_voltage > 20)) { alert("Spannung muss zwischen 0 und 20 V liegen."); return; }
+    const row = {vin_full:vin,branch_id:Number($("externalBranch").value),checked_at,event_type:$("externalEvent").value,resting_voltage,tester_result:$("externalTester").value || null,notes:$("externalNotes").value.trim() || null};
+    if (!confirm(`Batterieeintrag für ${vin} am ${germanDate(checked_at)} in ${branchName(row.branch_id)} speichern?`)) return;
+    const btn = $("saveExternalBattery"); btn.disabled = true;
+    try {
+      await apiRequest("external_battery_events",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(row)});
+      $("externalVoltage").value = ""; $("externalNotes").value = "";
+      await refreshExternalBattery();
+      alert("Eintrag gespeichert. Die Historie bleibt erhalten.");
+    } catch (error) { console.error(error); alert("Speichern fehlgeschlagen: " + error.message); }
+    finally { btn.disabled = false; }
+  };
   // Excel-Export: vollständige Daten direkt aus Supabase, nicht nur angezeigte Karten.
   async function fetchAllRows(table, order) {
     const rows = [], pageSize = 500;
@@ -1412,10 +1491,11 @@
     const button = $("excelExportButton"); button.disabled = true; button.textContent = "Export läuft...";
     try {
       await loadExcelLibrary();
-      const [allCars, allChecks, auditRows] = await Promise.all([
+      const [allCars, allChecks, auditRows, externalRows] = await Promise.all([
         fetchAllRows("cars","id.asc"),
         fetchAllRows("battery_checks","id.asc"),
-        fetchAllRows("battery_check_audit","id.asc")
+        fetchAllRows("battery_check_audit","id.asc"),
+        fetchAllRows("external_battery_events","id.asc")
       ]);
       const carMap = new Map(allCars.map(c => [Number(c.id),c]));
       const checkMap = new Map();
@@ -1465,6 +1545,12 @@
         "Neue Werte (JSON)":JSON.stringify(a.new_data || {})
       }));
       add("Korrekturprotokoll",auditExport,["Protokoll-ID","Eintrag-ID","Änderungszeitpunkt","Bearbeiter-ID","Alte Werte (JSON)","Neue Werte (JSON)"]);
+      const externalExport = externalRows.map(h => ({
+        "VIN (vollständig)":h.vin_full, "Standort":branchName(h.branch_id),
+        "Datum":excelDate(h.checked_at), "Vorgang":excelEvent(h.event_type),
+        "Ruhespannung (V)":h.resting_voltage ?? "", "Testergebnis":h.tester_result || "", "Notizen":h.notes || ""
+      }));
+      add("Ohne Parkplatz",externalExport,["VIN (vollständig)","Standort","Datum","Vorgang","Ruhespannung (V)","Testergebnis","Notizen"]);
       XLSX.writeFile(wb,`Ford_Batterie_Gesamtarchiv_${localISODate()}.xlsx`);
     } catch(error) { console.error(error); alert("Excel-Export fehlgeschlagen: " + error.message); }
     finally { button.disabled = false; button.textContent = "📥 Excel exportieren"; }
