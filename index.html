@@ -396,6 +396,14 @@
     .branchCar button { background:#eff6ff; text-align:left; flex:1; }
     .branchCar small { display:block; color:#475569; margin-top:4px; }
     #branchSelect { max-width:280px; background:#fff; font-weight:bold; }
+    .reminderStats { display:flex; flex-wrap:wrap; gap:9px; margin:12px 0; }
+    .reminderStats span { background:#f1f5f9; border-radius:7px; padding:8px; font-weight:bold; }
+    .reminderItem { width:100%; text-align:left; background:white; border:1px solid #cbd5e1; border-radius:8px; margin:6px 0; padding:10px; line-height:1.5; }
+    .reminderItem.overdue, .reminderItem.charge, .reminderItem.replace { border-left:6px solid #dc2626; }
+    .reminderItem.due { border-left:6px solid #d97706; }
+    .reminderItem.ok { border-left:6px solid #16a34a; }
+    .reminderItem.none { border-left:6px solid #64748b; }
+    .reminderHint { color:#475569; font-size:13px; }
     .archiveItem { display:block; width:100%; margin:5px 0; text-align:left; background:white; }
     .panel {
       display: none;
@@ -548,6 +556,7 @@
       <option value="replace">Ersetzen</option>
       <option value="none">Keine Daten</option>
     </select>
+    <button id="remindersButton" type="button" style="display:none">🔔 Batterie-Erinnerungen</button>
     <button id="externalBatteryButton" type="button" style="display:none">🔋 Ladung ohne Parkplatz</button>
     <button id="archiveButton" type="button" style="display:none">Archiv</button>
     <button id="excelExportButton" type="button" style="display:none">📥 Excel exportieren</button>
@@ -777,6 +786,18 @@
   </button>
 </div>
 
+<!-- GEMEINSAME ERINNERUNGEN FÜR ALLE 9 STANDORTE -->
+<div id="remindersPanel" class="panel" style="top:30px;max-width:850px;width:calc(100% - 20px)">
+  <button id="closeReminders" class="closeButton" type="button">×</button>
+  <h2>🔔 Batterie-Erinnerungen · Alle Standorte</h2>
+  <p class="reminderHint">Alle aktiven Fahrzeuge auf der Karte und ohne Parkplatz. Archivierte Fahrzeuge werden nicht erinnert.</p>
+  <div class="formRow"><label for="reminderBranch">Standort</label><select id="reminderBranch"><option value="all">Alle Standorte</option></select></div>
+  <div class="formRow"><label for="reminderStatus">Batteriestatus</label><select id="reminderStatus"><option value="attention">Handlungsbedarf + ohne Daten</option><option value="all">Alle Status</option><option value="overdue">Überfällig</option><option value="due">Bald fällig (7 Tage)</option><option value="charge">Nachladen</option><option value="replace">Ersetzen</option><option value="none">Ohne Daten</option><option value="ok">OK</option></select></div>
+  <div class="formRow"><label for="reminderSearch">VIN / Fahrzeugnummer suchen</label><input id="reminderSearch" type="search" placeholder="VIN oder Fahrzeugnummer"></div>
+  <div id="reminderStats" class="reminderStats"></div>
+  <div id="reminderMessage" class="reminderHint"></div>
+  <div id="reminderList"></div>
+</div>
 <!-- SEPARATE BATTERIEHISTORIE OHNE PARKPLATZ -->
 <div id="externalBatteryPanel" class="panel" style="top:35px;max-width:590px">
   <button id="closeExternalBattery" class="closeButton" type="button">×</button>
@@ -859,6 +880,8 @@
   }
   let cars = [];
   let batteryChecks = [];
+  let externalReminderEvents = [];
+  let reminderLoading = false;
   let batteryLoaded = false;
   let selectedBatteryCarId = null;
   let editingBatteryId = null;
@@ -899,6 +922,7 @@
     $("batteryPanel").style.display = "none";
     $("archivePanel").style.display = "none";
     $("externalBatteryPanel").style.display = "none";
+    $("remindersPanel").style.display = "none";
   }
 
   function updateAdminUI() {
@@ -926,9 +950,10 @@
     $("batteryFilter").style.display = admin ? "inline-block" : "none";
     $("archiveButton").style.display = admin ? "inline-block" : "none";
     $("externalBatteryButton").style.display = admin ? "inline-block" : "none";
+    $("remindersButton").style.display = admin ? "inline-block" : "none";
     $("excelExportButton").style.display = admin ? "inline-block" : "none";
     $("batterySummary").style.display = admin ? "flex" : "none";
-    if (!admin) { batteryChecks = []; batteryLoaded = false; $("batteryFilter").value = ""; $("batteryPanel").style.display = "none"; $("archivePanel").style.display = "none"; }
+    if (!admin) { externalReminderEvents = []; batteryChecks = []; batteryLoaded = false; $("batteryFilter").value = ""; $("batteryPanel").style.display = "none"; $("archivePanel").style.display = "none"; }
     renderCars();
   }
 
@@ -1098,6 +1123,7 @@
       setStatus("Als Administrator angemeldet.");
       await loadCars(true);
       await loadBatteryChecks();
+      await loadExternalReminders();
     } catch (error) {
       console.error(error);
       $("loginMessage").textContent =
@@ -1282,6 +1308,7 @@
         batteryChecks = data;
         renderCars();
         if ($("batteryPanel").style.display === "block") renderBatteryPanel();
+        if ($("remindersPanel").style.display === "block") renderReminders();
       }
       batteryLoaded = true;
     } catch(error) { console.error("Batterie laden:",error); }
@@ -1394,6 +1421,96 @@
     } catch(error) { console.error(error); alert("Speichern fehlgeschlagen: " + error.message); }
     finally { savingInProgress = false; $("saveBattery").disabled = false; await loadBatteryChecks(); }
   });
+  // Zentrale Batterie-Erinnerungen: Fahrzeuge auf dem Platz + externe VIN.
+  // Keine neue SQL-Tabelle: liest bestehende battery_checks und external_battery_events.
+  function externalReminderState(history) {
+    if (!history.length) return {kind:"none",label:"Keine Daten"};
+    const last = history[0];
+    if (last.tester_result === "Ersetzen") return {kind:"replace",label:"Ersetzen"};
+    if (last.tester_result === "Nachladen" && last.event_type === "check") return {kind:"charge",label:"Nachladen"};
+    const next = nextMonthISO(last.checked_at);
+    const today = localISODate();
+    if (next < today) return {kind:"overdue",label:"Überfällig",next};
+    const soon = new Date(); soon.setDate(soon.getDate()+7);
+    if (next <= localISODate(soon)) return {kind:"due",label:"Bald fällig",next};
+    return {kind:"ok",label:"OK",next};
+  }
+  function allReminderRows() {
+    const rows = [];
+    for (const car of cars) {
+      if ((car.yard_status || "on_site") !== "on_site") continue;
+      const history = checksFor(car.id);
+      const last = history[0];
+      rows.push({type:"car",car,vin:car.vin_full || car.vin5 || "",search:[car.vin_full,car.vin5,car.fahrnummer,car.model].join(" ").toLowerCase(),branchId:branchOf(car),last:last?.checked_at || "",state:batteryState(car)});
+    }
+    const groups = new Map();
+    for (const event of externalReminderEvents) {
+      const vin = String(event.vin_full || "").toUpperCase();
+      if (!vin) continue;
+      if (!groups.has(vin)) groups.set(vin,[]);
+      groups.get(vin).push(event);
+    }
+    for (const [vin,history] of groups) {
+      history.sort((a,b) => String(b.checked_at).localeCompare(String(a.checked_at)) || Number(b.id)-Number(a.id));
+      const last = history[0];
+      rows.push({type:"external",vin,search:vin.toLowerCase(),branchId:Number(last.branch_id),last:last.checked_at,state:externalReminderState(history)});
+    }
+    return rows;
+  }
+  function renderReminders() {
+    if (!isAdmin()) return;
+    const all = allReminderRows();
+    const counts = kind => all.filter(r => r.state.kind === kind).length;
+    const urgent = counts("overdue")+counts("due")+counts("charge")+counts("replace");
+    $("remindersButton").textContent = `🔔 Batterie-Erinnerungen (${urgent})`;
+    const stats = $("reminderStats"); stats.replaceChildren();
+    for (const [label,n] of [["🔴 Überfällig",counts("overdue")],["🟠 Bald fällig",counts("due")],["🔴 Nachladen",counts("charge")],["🔴 Ersetzen",counts("replace")],["⚪ Ohne Daten",counts("none")],["🟢 OK",counts("ok")]]) {
+      const el = document.createElement("span"); el.textContent = `${label}: ${n}`; stats.appendChild(el);
+    }
+    const branch = $("reminderBranch").value, kind = $("reminderStatus").value, query = $("reminderSearch").value.trim().toLowerCase();
+    const attention = ["overdue","due","charge","replace","none"];
+    const visible = all.filter(r => (branch === "all" || Number(branch) === r.branchId) && (kind === "all" || (kind === "attention" ? attention.includes(r.state.kind) : kind === r.state.kind)) && (!query || r.search.includes(query)));
+    const priority = {overdue:0,replace:1,charge:2,due:3,none:4,ok:5};
+    visible.sort((a,b) => (priority[a.state.kind]??9)-(priority[b.state.kind]??9) || String(a.state.next||"9999").localeCompare(String(b.state.next||"9999")) || a.vin.localeCompare(b.vin));
+    $("reminderMessage").textContent = `${visible.length} von ${all.length} Fahrzeugen angezeigt · Standorte: 9 · Aktualisierung automatisch`;
+    const list = $("reminderList"); list.replaceChildren();
+    if (!visible.length) { const p=document.createElement("p"); p.textContent="Keine passenden Fahrzeuge."; list.appendChild(p); }
+    for (const r of visible) {
+      const btn=document.createElement("button"); btn.type="button"; btn.className=`reminderItem ${r.state.kind}`;
+      const location=branchName(r.branchId);
+      btn.textContent=`${r.state.kind === "overdue" ? "🔴" : r.state.kind === "due" ? "🟠" : r.state.kind === "ok" ? "🟢" : "🔋"} ${r.vin} · ${location} · ${r.type === "external" ? "Ohne Parkplatz" : "Auf Parkplatz"}\n${r.state.label} · Letzter Vorgang: ${germanDate(r.last)} · Nächste Prüfung: ${germanDate(r.state.next)}${r.car?.fahrnummer ? " · " + r.car.fahrnummer : ""}`;
+      btn.style.whiteSpace="pre-line";
+      btn.onclick=()=>{
+        if (r.type === "car") openBattery(r.car);
+        else { closePanels(); fillBranchSelect($("externalBranch"),r.branchId); $("externalVin").value=r.vin; $("externalDate").value=localISODate(); $("externalBatteryPanel").style.display="block"; refreshExternalBattery(); }
+      };
+      list.appendChild(btn);
+    }
+  }
+  async function loadExternalReminders() {
+    if (!isAdmin() || reminderLoading || document.hidden) return;
+    reminderLoading=true;
+    try {
+      const data=await fetchAllRows("external_battery_events","id.asc");
+      externalReminderEvents=data;
+      renderReminders();
+    } catch(error) {
+      console.error("Erinnerungen laden:",error);
+      if ($("remindersPanel").style.display === "block") $("reminderMessage").textContent="Externe Erinnerungen konnten nicht geladen werden: "+error.message;
+    } finally { reminderLoading=false; }
+  }
+  $("remindersButton").onclick=async()=>{
+    if (!isAdmin()) return;
+    closePanels();
+    const select=$("reminderBranch"); select.replaceChildren();
+    const all=document.createElement("option"); all.value="all"; all.textContent="Alle Standorte"; select.appendChild(all);
+    for (const b of branches) { const opt=document.createElement("option"); opt.value=String(b.id); opt.textContent=b.id===1 ? "Hauptparkplatz · Glauchau" : b.name; select.appendChild(opt); }
+    select.value="all";
+    $("remindersPanel").style.display="block";
+    renderReminders(); await loadExternalReminders();
+  };
+  $("closeReminders").onclick=()=>$("remindersPanel").style.display="none";
+  for (const id of ["reminderBranch","reminderStatus","reminderSearch"]) $(id).addEventListener(id==="reminderSearch"?"input":"change",renderReminders);
   // Separate Batterie-Ereignisse: VIN ohne Parkplatzkarte.
   function externalVIN() { return $("externalVin").value.trim().toUpperCase().replace(/\s+/g, ""); }
   async function refreshExternalBattery() {
@@ -1449,6 +1566,7 @@
       await apiRequest("external_battery_events",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(row)});
       $("externalVoltage").value = ""; $("externalNotes").value = "";
       await refreshExternalBattery();
+      await loadExternalReminders();
       alert("Eintrag gespeichert. Die Historie bleibt erhalten.");
     } catch (error) { console.error(error); alert("Speichern fehlgeschlagen: " + error.message); }
     finally { btn.disabled = false; }
@@ -2414,11 +2532,12 @@
     await loadBranches();
     await loadCars(true);
     await loadBatteryChecks();
+    if (isAdmin()) await loadExternalReminders();
 
     /* Проверяем изменения каждые 3 секунды. */
     setInterval(() => {
       loadCars();
-      if (isAdmin()) loadBatteryChecks();
+      if (isAdmin()) { loadBatteryChecks(); if ($("remindersPanel").style.display === "block") loadExternalReminders(); }
     }, AUTO_REFRESH_MS);
 
     /* После возвращения на вкладку обновляем сразу. */
