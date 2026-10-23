@@ -141,13 +141,6 @@
 
     .marker.admin { cursor: grab; }
     .marker.admin:active { cursor: grabbing; }
-    .rotateHandle {
-      position:absolute; left:50%; top:-18px; transform:translateX(-50%);
-      width:20px; height:20px; border-radius:50%; border:2px solid white;
-      background:#2563eb; color:white; font:bold 14px/16px Arial;
-      text-align:center; z-index:25; cursor:crosshair;
-      box-shadow:0 1px 5px #1119; touch-action:none;
-    }
     .marker.rotating { z-index:1001; }
     .marker.rotating .carShape { transform:translate(-50%,-50%) rotate(var(--rotation,0deg)) scale(1) !important; }
     .marker.rotating .carVin { top:calc(50% + 23px) !important; font-size:7px !important; }
@@ -386,6 +379,8 @@
       box-shadow: 0 1px 3px rgba(0,0,0,.3);
     }
 
+    /* Поворот только мышкой: скрываем кнопки в карточке. */
+    #rotationControls { display: none !important; }
     .batteryDot { position:absolute; left:calc(50% + 13px); top:calc(50% - 19px); border:1px solid #fff; border-radius:50%; width:16px; height:16px; font-size:11px; font-weight:bold; line-height:14px; text-align:center; color:white; background:#64748b; z-index:8; pointer-events:none; }
     .batteryDot.ok { background:#16a34a; }
     .batteryDot.due { background:#d97706; }
@@ -1998,11 +1993,6 @@
       }
 
       if (isAdmin()) {
-        const handle = document.createElement("span");
-        handle.className = "rotateHandle";
-        handle.textContent = "↻";
-        handle.title = "Mit linker Maustaste ziehen, um das Auto zu drehen";
-        marker.appendChild(handle);
         enableDrag(marker, car);
       }
 
@@ -2042,7 +2032,7 @@
       moved = false;
       startX = event.clientX;
       startY = event.clientY;
-      mode = event.target.closest(".rotateHandle") ? "rotate" : "move";
+      mode = "pending";
       startingAngle = normalizeAngle(Number(car.rotation_deg || 0));
       currentAngle = startingAngle;
       pointerStartAngle = pointerAngle(event);
@@ -2054,14 +2044,17 @@
     marker.addEventListener("pointermove", event => {
       if (!marker.hasPointerCapture(event.pointerId)) return;
       const distance = Math.hypot(event.clientX - startX, event.clientY - startY);
-      if (distance > 4) {
+      if (!moved && distance > 6) {
+        // Horizontal gesture rotates in place; vertical gesture moves the car.
+        mode = Math.abs(event.clientX - startX) >= Math.abs(event.clientY - startY) ? "rotate" : "move";
         moved = true;
         dragging = true;
         marker.classList.add(mode === "rotate" ? "rotating" : "dragging");
       }
       if (!moved) return;
       if (mode === "rotate") {
-        currentAngle = normalizeAngle(startingAngle + pointerAngle(event) - pointerStartAngle);
+        // 2 degrees per pixel, no need for a separate rotation handle.
+        currentAngle = normalizeAngle(startingAngle + (event.clientX - startX) * 2);
         marker.querySelector(".carShape")?.style.setProperty("--rotation", `${currentAngle}deg`);
         setStatus(`Fahrzeug drehen: ${currentAngle}°`);
       } else {
