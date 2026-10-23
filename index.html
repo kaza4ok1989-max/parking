@@ -141,6 +141,17 @@
 
     .marker.admin { cursor: grab; }
     .marker.admin:active { cursor: grabbing; }
+    .rotateHandle {
+      position:absolute; left:50%; top:-18px; transform:translateX(-50%);
+      width:20px; height:20px; border-radius:50%; border:2px solid white;
+      background:#2563eb; color:white; font:bold 14px/16px Arial;
+      text-align:center; z-index:25; cursor:crosshair;
+      box-shadow:0 1px 5px #1119; touch-action:none;
+    }
+    .marker.rotating { z-index:1001; }
+    .marker.rotating .carShape { transform:translate(-50%,-50%) rotate(var(--rotation,0deg)) scale(1) !important; }
+    .marker.rotating .carVin { top:calc(50% + 23px) !important; font-size:7px !important; }
+
 
     /* Увеличение машины и VIN при наведении мыши */
     @media (hover: hover) and (pointer: fine) {
@@ -1987,6 +1998,11 @@
       }
 
       if (isAdmin()) {
+        const handle = document.createElement("span");
+        handle.className = "rotateHandle";
+        handle.textContent = "↻";
+        handle.title = "Mit linker Maustaste ziehen, um das Auto zu drehen";
+        marker.appendChild(handle);
         enableDrag(marker, car);
       }
 
@@ -2011,114 +2027,81 @@
 
   /* ПЕРЕТАСКИВАНИЕ — ТОЛЬКО АДМИНИСТРАТОР */
   function enableDrag(marker, car) {
-    let startX = 0;
-    let startY = 0;
-    let moved = false;
+    let startX = 0, startY = 0, moved = false, mode = "move";
+    let startingAngle = 0, pointerStartAngle = 0, currentAngle = 0;
+    const normalizeAngle = angle => ((Math.round(angle) % 360) + 360) % 360;
+    const pointerAngle = event => {
+      const rect = marker.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      return Math.atan2(event.clientY - cy, event.clientX - cx) * 180 / Math.PI;
+    };
 
     marker.addEventListener("pointerdown", event => {
-      if (!isAdmin() || placementMode) return;
-
+      if (!isAdmin() || placementMode || event.button !== 0) return;
       dragging = false;
       moved = false;
-
       startX = event.clientX;
       startY = event.clientY;
-
+      mode = event.target.closest(".rotateHandle") ? "rotate" : "move";
+      startingAngle = normalizeAngle(Number(car.rotation_deg || 0));
+      currentAngle = startingAngle;
+      pointerStartAngle = pointerAngle(event);
       dragInProgress = true;
       marker.setPointerCapture(event.pointerId);
+      event.preventDefault();
     });
 
     marker.addEventListener("pointermove", event => {
-      if (
-        !marker.hasPointerCapture(event.pointerId)
-      ) return;
-
-      const distance = Math.hypot(
-        event.clientX - startX,
-        event.clientY - startY
-      );
-
+      if (!marker.hasPointerCapture(event.pointerId)) return;
+      const distance = Math.hypot(event.clientX - startX, event.clientY - startY);
       if (distance > 4) {
         moved = true;
         dragging = true;
-        marker.classList.add("dragging");
+        marker.classList.add(mode === "rotate" ? "rotating" : "dragging");
       }
-
       if (!moved) return;
-
-      const pos = getMapPercent(
-        event.clientX,
-        event.clientY
-      );
-
-      marker.style.left = pos.x + "%";
-      marker.style.top = pos.y + "%";
+      if (mode === "rotate") {
+        currentAngle = normalizeAngle(startingAngle + pointerAngle(event) - pointerStartAngle);
+        marker.querySelector(".carShape")?.style.setProperty("--rotation", `${currentAngle}deg`);
+        setStatus(`Fahrzeug drehen: ${currentAngle}°`);
+      } else {
+        const pos = getMapPercent(event.clientX, event.clientY);
+        marker.style.left = pos.x + "%";
+        marker.style.top = pos.y + "%";
+      }
     });
 
     marker.addEventListener("pointerup", async event => {
-      if (
-        !marker.hasPointerCapture(event.pointerId)
-      ) return;
-
+      if (!marker.hasPointerCapture(event.pointerId)) return;
       marker.releasePointerCapture(event.pointerId);
-      marker.classList.remove("dragging");
-
-      if (!moved) {
-        dragInProgress = false;
-        return;
-      }
-
-      const pos = getMapPercent(
-        event.clientX,
-        event.clientY
-      );
-
+      marker.classList.remove("dragging", "rotating");
+      if (!moved) { dragInProgress = false; return; }
+      const rotating = mode === "rotate";
+      const pos = rotating ? null : getMapPercent(event.clientX, event.clientY);
+      const changes = rotating ? {rotation_deg: currentAngle} : {position_x:pos.x, position_y:pos.y};
       savingInProgress = true;
-
       try {
-        setStatus("Position wird gespeichert...");
-
-        await apiRequest(
-          `cars?id=eq.${car.id}`,
-          {
-            method: "PATCH",
-            headers: {
-              Prefer: "return=minimal"
-            },
-            body: JSON.stringify({
-              position_x: pos.x,
-              position_y: pos.y
-            })
-          }
-        );
-
-        car.position_x = pos.x;
-        car.position_y = pos.y;
-
-        /* Следующая проверка обновит и других зрителей. */
+        setStatus(rotating ? "Drehung wird gespeichert..." : "Position wird gespeichert...");
+        await apiRequest(`cars?id=eq.${car.id}`, {
+          method:"PATCH", headers:{Prefer:"return=minimal"}, body:JSON.stringify(changes)
+        });
+        Object.assign(car, changes);
         lastCarsSnapshot = "";
-        setStatus("Position gespeichert.");
+        setStatus(rotating ? "Drehung gespeichert." : "Position gespeichert.");
       } catch (error) {
         console.error(error);
-        alert(
-          "Position konnte nicht gespeichert werden."
-        );
+        alert((rotating ? "Drehung" : "Position") + " konnte nicht gespeichert werden: " + error.message);
       } finally {
         dragInProgress = false;
         savingInProgress = false;
-
         renderCars();
-
-        setTimeout(() => {
-          dragging = false;
-        }, 100);
-
+        setTimeout(() => { dragging = false; }, 100);
         loadCars(true);
       }
     });
 
     marker.addEventListener("pointercancel", () => {
-      marker.classList.remove("dragging");
+      marker.classList.remove("dragging", "rotating");
       dragInProgress = false;
       dragging = false;
       renderCars();
