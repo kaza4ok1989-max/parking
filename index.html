@@ -149,7 +149,7 @@
       }
 
       .marker:hover .carShape {
-        transform: translate(-50%, -50%) scale(2);
+        transform: translate(-50%, -50%) rotate(var(--rotation, 0deg)) scale(2);
         box-shadow: 0 4px 12px rgba(0,0,0,.55);
       }
 
@@ -176,7 +176,7 @@
 
     /* Во время перетаскивания машина сразу обычного размера */
     .marker.dragging .carShape {
-      transform: translate(-50%, -50%) scale(1) !important;
+      transform: translate(-50%, -50%) rotate(var(--rotation, 0deg)) scale(1) !important;
       box-shadow: 0 2px 4px rgba(0,0,0,.45) !important;
     }
 
@@ -199,7 +199,7 @@
       top: 50%;
       width: 22px;
       height: 34px;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) rotate(var(--rotation, 0deg));
       background: var(--car-color, white);
       border: 1.5px solid #202020;
       border-radius: 6px;
@@ -592,6 +592,7 @@
     >
     <div id="markers"></div>
   </div>
+  <div id="chemnitzPhotoWrap" style="display:none;margin-bottom:12px"><img src="./chemnitz_karte.png" alt="FordStore Chemnitz" style="display:block;width:100%;height:auto;border-radius:10px;border:1px solid #cbd5e1"></div>
   <div id="branchList"></div>
 </main>
 
@@ -773,6 +774,16 @@
     Mobile.de öffnen
   </a>
 
+  <div id="rotationControls" class="formRow" style="display:none;background:#eff6ff;padding:10px;border-radius:8px;margin-top:10px">
+    <label>Fahrzeug drehen · Поворот машины: <strong id="rotationValue">0°</strong></label>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button type="button" id="rotateLeft">↶ −15°</button>
+      <button type="button" id="rotateRight">↷ +15°</button>
+      <button type="button" id="rotateHalf">↻ 180°</button>
+      <button type="button" id="rotateReset">0°</button>
+    </div>
+    <small>Wird sofort gespeichert · Сохраняется автоматически</small>
+  </div>
   <button id="batteryButton" class="primaryButton fullButton" type="button">🔋 Batterie / Verlauf</button>
   <button id="soldCarButton" class="fullButton" type="button">Verkauft · ins Archiv</button>
   <button id="departedCarButton" class="fullButton" type="button">Abgefahren · ins Archiv</button>
@@ -1856,6 +1867,7 @@
     shape.className =
       "carShape " + getVehicleType(car.model);
 
+    shape.style.setProperty("--rotation", `${Number(car.rotation_deg || 0)}deg`);
     shape.style.setProperty(
       "--car-color",
       getCarColor(car.color)
@@ -1907,7 +1919,9 @@
     if (dragInProgress) return;
 
     markers.innerHTML = "";
-    const isMap = activeBranchId === 1;
+    const isMap = activeBranchId === 1 || activeBranchId === 8;
+    $("parkingImage").src = activeBranchId === 8 ? "./chemnitz_karte.png" : "./parking.png?v=3";
+    $("chemnitzPhotoWrap").style.display = "none";
     $("mapWrapper").style.display = isMap ? "block" : "none";
     $("branchList").style.display = isMap ? "none" : "block";
     $("branchList").replaceChildren();
@@ -2162,6 +2176,8 @@
       car.mobile_url || "";
 
     const admin = isAdmin();
+    $("rotationControls").style.display = admin && (branchOf(car) === 1 || branchOf(car) === 8) ? "block" : "none";
+    $("rotationValue").textContent = `${Number(car.rotation_deg || 0)}°`;
 
     [
       "editVin",
@@ -2194,6 +2210,30 @@
     selectedCar = null;
     card.style.display = "none";
   });
+
+  async function rotateSelectedCar(delta, reset = false) {
+    if (!isAdmin() || !selectedCar || savingInProgress) return;
+    const car = selectedCar;
+    const oldAngle = Number(car.rotation_deg || 0);
+    const angle = reset ? 0 : ((oldAngle + delta) % 360 + 360) % 360;
+    if (angle === oldAngle) return;
+    savingInProgress = true;
+    try {
+      await apiRequest(`cars?id=eq.${car.id}`, {
+        method: "PATCH", headers: {Prefer: "return=minimal"},
+        body: JSON.stringify({rotation_deg: angle})
+      });
+      car.rotation_deg = angle;
+      $("rotationValue").textContent = `${angle}°`;
+      lastCarsSnapshot = "";
+      renderCars();
+    } catch(error) { console.error(error); alert("Drehen fehlgeschlagen: " + error.message); }
+    finally { savingInProgress = false; }
+  }
+  $("rotateLeft").onclick = () => rotateSelectedCar(-15);
+  $("rotateRight").onclick = () => rotateSelectedCar(15);
+  $("rotateHalf").onclick = () => rotateSelectedCar(180);
+  $("rotateReset").onclick = () => rotateSelectedCar(0, true);
 
   /* СОХРАНЕНИЕ */
   $("saveCarButton").addEventListener(
@@ -2387,7 +2427,7 @@
           $("newMobileUrl").value.trim()
       };
 
-      if (activeBranchId !== 1) {
+      if (activeBranchId !== 1 && activeBranchId !== 8) {
         addPanel.style.display = "none";
         savingInProgress = true;
         try {
@@ -2436,7 +2476,7 @@
 
       const newCar = {
         ...pendingCar,
-        branch_id: 1,
+        branch_id: activeBranchId,
         position_x: pos.x,
         position_y: pos.y
       };
@@ -2505,7 +2545,7 @@
     placementMode = false; pendingCar = null;
     $("placementMessage").style.display = "none";
     closePanels();
-    $("placeCarButton").textContent = activeBranchId === 1 ? "Auf Parkplatz setzen" : "Fahrzeug speichern";
+    $("placeCarButton").textContent = (activeBranchId === 1 || activeBranchId === 8) ? "Auf Parkplatz setzen" : "Fahrzeug speichern";
     renderCars();
   });
 
